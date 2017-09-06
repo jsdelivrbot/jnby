@@ -1,0 +1,251 @@
+<template>
+	<div class="inquiry-wrapper">
+		<div class="inquiry-top container-fluid">
+			<div class="row mgb10">
+				<div class="col-md-3">
+					<label>员工编号：</label>
+					<input type="text" name="" placeholder="" v-model="param.employeeNum" />
+				</div>
+				<div class="col-md-3">
+					<label>员工名称：</label>
+					<input type="text" name="" placeholder="" v-model="param.employeeName" />
+				</div>
+				<div class="col-md-3">
+					<label>手机号：</label>
+					<input type="number" name="" placeholder="" v-model="param.telphone" />
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-md-3">
+					<label>所属门店：</label>
+					<select v-model="param.storeId">
+						<option value="" selected="selected">不限</option>
+						<option v-for="store in stores" :value="store.storeNum">{{store.storeName}}</option>
+					</select>
+				</div>
+				<div class="col-md-3">
+					<label>大区：</label>
+					<select v-model="param.areaId">
+						<option value="" selected="selected">不限</option>
+						<option v-for="area in areas" :value="area.areaId">{{area.areaName}}</option>
+					</select>
+				</div>
+				<div class="col-md-3">
+					<button type="button" class="btn btn-primary" @click="refresh">查询</button>
+				</div>
+			</div>
+			<div class="row mgt10">
+				<div class="col-md-12 pb10">
+					<button class="btn btn-primary fn-left" @click="download">导出数据</button>
+					<form id="formid">
+						<button class="btn btn-primary fn-left mgl10" type="button">导入数据</button>
+						<input class="btn fn-left mgr10 opacityHide" type="file" id="resource" name="resource" ref="resource" @change="upload()">
+					</form>
+					<!--<router-link class="btn btn-primary fn-right" :to="{path: dataurl, query: {jsonObject: JSON.stringify(param)}}" tag="a">导出数据</router-link>-->
+				</div>				
+			</div>				
+			<div class="clearfix"></div>
+		</div>
+
+		<div class="col-md-12">
+			<div class="col-md-12 pb10">
+				<span class="fn-left mgt5">查询结果（{{counts}}）</span>
+				<!--<button type="button" class="btn btn-primary fn-right">导出数据</button>-->
+			</div>
+			<div class="col-md-12">
+				<table class="table table-bordered normall-table table-hover">
+					<tr>
+						<!--<th>员工ID</th>-->
+						<th>员工编号</th>
+						<th>员工姓名</th>
+						<th>联系电话</th>
+						<th>员工类型</th>
+						<th>店铺名称</th>
+						<th>店铺编号</th>
+						<th>店铺大区</th>
+						<th>入司日期</th>
+						<th>状态</th>
+						<th>离职日期</th>
+					</tr>
+					<tr v-for="list in lists" v-bind:class="{graytr: list.status==0}">
+						<!--<td>{{list.employeeId}}</td>-->
+						<td>{{list.employeeNum}}</td>
+						<td>{{list.employeeName}}</td>
+						<td>{{list.telphone}}</td>
+						<td v-if="list.type=='0'">管理员</td>
+						<td v-if="list.type=='1'">普通员工</td>
+						<td v-if="list.type=='2'">销售主管</td>
+						<td v-if="list.type=='3'">店长</td>
+						<td v-if="list.type=='4'">城市经理</td>
+						<td v-if="list.type=='5'">大区经理</td>
+						<td v-if="list.type=='6'">零售助理</td>
+						<td v-if="isNaN(Number(list.type))">{{list.type}}</td>
+						<td>{{list.storeName}}</td>
+						<td>{{list.storeId}}</td>
+						<td>{{list.areaName}}</td>
+						<td>{{list.createTime}}</td>
+						<td class="am-ft-green" v-if="list.status==1">在职</td>
+						<td v-if="list.status==0">已离职</td>
+						<td v-if="list.status==0"></td>
+						<td v-if="list.status==1">--</td>
+					</tr>
+				</table>
+				<!--分页-->
+				<button class="btn btn-default fn-left" @click="refresh" v-show="counts>0">刷新</button>
+				<boot-page v-show="counts>0" ref="page" :async="true" :data="lists" :url="url" :len="10" :page-len="pageLen" :param="param" v-on:listenToChildEvent="showMsgFormChild"></boot-page>								
+				<!--/分页-->	
+				<div v-show="counts==0">
+					<p class="text-muted am-ft-center mgt20">暂无数据</p>
+				</div>
+			</div>
+		</div>
+		<div class="clearfix"></div>
+	</div>
+</template>
+
+<script>
+	import bootPage from '../pagination.vue'
+	export default {
+		name: '',
+		data() {
+			return {
+				counts: '',
+				lenArr: [10], // 每页显示长度设置
+	            pageLen: 10, // 可显示的分页数
+	            url: 'http://dvtest.qineasy.com:8888/employee/getEmployeeList', // 请求路径
+	            param: {
+	            	employeeNum: '',
+					employeeName: '',
+					telphone: '',
+					storeId: '',
+					areaId: '',
+					nub: '0',
+					size: '10'
+	            }, // 传递参数
+	            lists: [], // 分页组件传回的分页后数据 
+	            stores: [],
+	            areas: []
+			}
+		},
+		created() {
+	      this.$nextTick(() => {
+	        this.refresh()	        
+	      })	      
+	      this.getStores(),
+	      this.getAreas()
+		},
+		components: {
+	        bootPage
+	  	},
+		methods: {
+			upload(){
+				var formData = new FormData() // FormData 对象
+				formData.append('file', this.$refs.resource.files[0])
+				formData.append('jsonObject', '')
+				this.$http.post('http://dvtest.qineasy.com:8888/excel/employeeImport', formData, {
+					method: 'post',
+					headers: {
+						'Content-Type': 'multipart/form-data'
+					},
+					transformRequest: [function (data) {
+						return data
+					}],
+					onUploadProgress: function(e) {
+						let percentage = Math.round((e.loaded * 100) / e.total) || 0
+						console.log(e, percentage)
+					}
+				}).then((response) => {
+					if (response.data.status) {
+						setTimeout(function(){
+							location.reload();
+						},500)						
+					} else {
+						this.$Notice.error({
+							title: '错误',
+							message: response.data.imgId
+						})
+					}
+				}).catch(function (error) {
+					console.log(error)
+				})				
+			},					
+			//下载模板
+			download(){
+				var that = this;
+				window.open('http://dvtest.qineasy.com:8888/excel/exportMouldExcel?jsonObject=4');
+			},				
+           	refresh () {
+           		var that = this;
+	            that.$refs.page.refresh()
+	        },
+			showMsgFormChild: function(data){
+	            this.lists = data.employeeList;	
+//				console.info(this.lists)
+	            this.counts = data.count;
+			},
+			//查询门店
+			getStores(){
+				var that = this;
+				that.$axios({
+                    url: 'http://dvtest.qineasy.com:8888/store/getStoreList', 
+                    method: 'post',
+                    params: {
+                    	jsonObject: {}
+                    }
+                })
+				.then(function (response) {
+//					console.info(response.data.t)
+			        that.stores = response.data.t.storeList
+			    })
+			      .catch(function (error) {
+			        console.info(error)
+			    })
+			},
+			//查询区域
+			getAreas(){
+				var that = this;
+				that.$axios({
+                    url: 'http://dvtest.qineasy.com:8888/area/areaList', 
+                    method: 'post',
+                    params: {
+                    	jsonObject: {}
+                    }
+                })
+				.then(function (response) {
+//					console.info(response)
+			        that.areas = response.data.t
+			    })
+			      .catch(function (error) {
+			        console.info(error)
+			    })
+			}
+		},
+		events: {
+	        // 刷新数据
+	        'refresh' () {
+	            this.refresh()
+	        }
+	    }
+	}
+</script>
+<style scoped="scoped">
+	.normall-table tr td {
+	    max-width: 120px;
+	    overflow: hidden;
+	    text-overflow: ellipsis;
+	    white-space: nowrap;
+	}
+	.opacityHide{
+		opacity: 0;
+	}
+	#formid{
+		position:relative;
+		overflow:hidden;
+	}
+	#formid input{
+		position:absolute;
+		left:0;
+		top:0;
+		height:100%;
+	}	
+</style>

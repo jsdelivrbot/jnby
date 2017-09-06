@@ -1,0 +1,341 @@
+<template>
+	<div class="inquiry-wrapper">
+		<div class="inquiry-top container-fluid">
+			<div class="row mgb10">
+				<div class="col-md-3">
+					<label>门店编号：</label>
+					<input type="text" name="" placeholder="" v-model="param.storeNum" />
+				</div>
+				<div class="col-md-3">
+					<label>门店名称：</label>
+					<input type="text" name="" placeholder="" v-model="param.storeName" />
+				</div>
+				<!--<div class="col-md-3">
+					<label>销售主管：</label>
+					<select v-model="param.salesId">
+						<option value="" selected="selected">不限</option>
+						<option v-for="n in executive" :value="n.employeeId">{{n.employeeName}}</option>
+					</select>
+				</div>-->
+				<div class="col-md-3">
+					<button type="button" class="btn btn-primary" @click="refresh">查询</button>
+				</div>
+			</div>
+			<!--<div class="row">
+				<div class="col-md-3">
+					<label>店长：</label>
+					<select v-model="param.ownerId">
+						<option value="" selected="selected">不限</option>
+						<option v-for="n in buinours" :value="n.employeeId">{{n.employeeName}}</option>
+					</select>
+				</div>
+				<div class="col-md-3">
+					<label>等级：</label>
+					<select v-model="param.yearLevel">
+						<option value="" selected="selected">不限</option>
+						<option v-for="n in grades" :value="n.levelId">{{n.levelName}}</option>
+					</select>
+				</div>
+				<div class="col-md-3">
+					<button type="button" class="btn btn-primary" @click="refresh">查询</button>
+				</div>
+			</div>-->
+			<div class="clearfix"></div>
+		</div>
+
+		<div class="col-md-12">
+			<div class="col-md-12 pb10">
+				<span class="fn-left mgt5">查询结果（{{counts}}）</span>
+				<!--<button type="button" class="btn btn-primary fn-right">导出数据</button>-->
+			</div>
+			<div class="col-md-12">
+				<table class="table table-bordered normall-table table-hover">
+					<tr>
+						<!--<th>门店ID</th>-->
+						<th>店铺编号</th>
+						<th>店铺名称</th>
+						<th>店铺大区</th>
+						<!--<th>店铺城市</th>
+						<th>店铺品牌</th>-->
+						<th>店铺管理模式</th>
+						<th>编制人数</th>
+						<th>零售助理</th>
+						<th>店长</th>
+						<!--<th>大店长</th>
+						<th>销售主管</th>-->
+						<th>城市经理</th>
+						<!--<th>大区经理</th>-->
+						<th class='imgSet'>店铺年等级
+							<img @click="editLevel('Y')" v-if="showLevelY=='1'" src="../../assets/icon_edit.png" />
+							<img @click="saveLevel('Y')" v-if="showLevelY=='2'" src="../../assets/icon_save.png" />
+						</th>
+						<th class='imgSet'>店铺月等级
+							<img @click="editLevel('M')" v-if="showLevelM=='1'" src="../../assets/icon_edit.png" />
+							<img @click="saveLevel('M')" v-if="showLevelM=='2'" src="../../assets/icon_save.png" />
+						</th>
+						<th>开店时间</th>
+						<!--<th>撤店时间</th>-->
+					</tr>
+					<tr v-for="list in lists">
+						<!--<td>{{list.storeId}}</td>-->
+						<td>{{list.storeNum}}</td>
+						<td>{{list.storeName}}</td>
+						<td>{{list.areaName}}</td>
+						<!--<td>{{list.cs}}</td>-->
+						<!--<td>{{list.pp}}</td>-->
+						<td>{{list.storeType}}</td>
+						<td>{{list.employeeCount}}</td>
+						<td>{{list.retailName}}</td>
+						<td>{{list.ownerName}}</td>
+						<!--<td>{{list.dOwnerName}}</td>-->
+						<!--<td>{{list.salesName}}</td>-->
+						<td>{{list.csOwnerName}}</td>
+						<!--<td>{{list.dqOwnerName}}</td>-->
+						<td>
+							<span v-show="showLevelY=='1'">{{list.yearLevelName}}</span>
+							<select v-show="showLevelY=='2'"  name='editLevelY'  @click="changeLevel(list,'Y')" v-model='list.yearLevel'>
+								<option :value="list.yearLevel" v-if='showYear=="0"' >{{list.yearLevelName}}</option>
+								<option :value="item.level.levelId"   v-for="item in yearLevelList">{{item.level.levelName}}</option>
+							</select>
+							<!--<p>Selected: {{list.yearLevel}}</p>-->
+						</td>
+						<td>
+							<span v-show="showLevelM=='1'">{{list.monthLevelName}}</span>
+							<select v-show="showLevelM=='2'"  name='editLevelM'  @click="changeLevel(list,'M')" v-model='list.monthLevel'>
+								<option :value="list.monthLevel"  v-if='showMonth=="0"'>{{list.monthLevelName}}</option>
+								<option :value="item.level.levelId" v-for="item in monthLevelList">{{item.level.levelName}}</option>
+							</select>
+							<!--<p>Selected: {{list.monthLevel}}</p>-->
+						</td>
+						<td>{{list.storeTime}}</td>
+						<td>{{list.endTime}}</td>
+					</tr>
+				</table>
+				<!--分页-->
+				<button class="btn btn-default fn-left" @click="refresh" v-show="counts>0">刷新</button>
+				<boot-page v-show="counts>0" ref="page" :async="true" :data="lists" :len="10" :url="url" :page-len="pageLen" :param="param" v-on:listenToChildEvent="showMsgFormChild"></boot-page>								
+				<!--/分页-->	
+				<div v-show="counts==0">
+					<p class="text-muted am-ft-center mgt20">暂无数据</p>
+				</div>
+			</div>
+		</div>
+		<div class="clearfix"></div>
+	</div>
+</template>
+
+<script>
+	import bootPage from '../pagination.vue'
+	export default {
+		 data () {
+	        return {
+	            counts: '',
+				lenArr: [10], // 每页显示长度设置
+	            pageLen: 10, // 可显示的分页数
+	            url: 'http://dvtest.qineasy.com:8888/store/getStoreList', // 请求路径
+	         //   url: 'http://dvtest.qineasy.com:8888/store/getStoreList', // 请求路径
+	            param: {
+	            	storeNum: '',
+					storeName: '',
+					salesId: '',
+					ownerId: "",
+					yearLevel: '',
+					nub: '0',
+					size: '10'
+	            }, // 传递参数
+	            lists: [], // 分页组件传回的分页后数据
+	            grades: [],
+	            buinours: [],
+	            executive: [],
+            	showLevelY:'1',//默认年等级显示编辑图标
+				showLevelM:'1',//默认月等级显示编辑图标
+				monthLevelList:[],//月等级列表
+				yearLevelList:[],//年等级列表
+				showMonth:'0',//默认下拉框显示月等级
+				showYear:'0',//默认下拉框显示年等级
+				updateStoreList:[],//存放保存的数据
+	        }
+	    },
+	    created() {
+	      this.$nextTick(() => {
+	        this.refresh()
+	      })
+	      this.getGrades(),
+	      this.getBuinour(),
+	      this.getExecutive()
+		  if(JSON.parse(sessionStorage.userInfo)[0].type==0){}else{
+		  	this.param.ownerId=JSON.parse(sessionStorage.userInfo)[0].employeeNum
+		  }
+		},
+	    components: {
+	        bootPage
+	  	},
+		methods: {
+           	refresh () {
+           		var that = this;
+	            that.$refs.page.refresh()
+	        },
+			showMsgFormChild: function(data){
+	            this.lists = data.storeList;	
+				console.info(this.lists)
+	            this.counts = data.count;
+			},
+			//查询等级
+			getGrades(){
+				var that = this;
+				that.$axios({
+                    url: 'http://dvtest.qineasy.com:8888/level/getLevelList', 
+                    method: 'post',
+                    params: {
+                    	jsonObject: {}
+                    }
+                })
+				.then(function (response) {
+			        that.grades = response.data.t
+			    })
+			      .catch(function (error) {
+			        console.info(error)
+			    })
+			},
+			//查询店长
+			getBuinour(){
+				var that = this;
+				that.$axios({
+                    url: 'http://dvtest.qineasy.com:8888/employee/getEmployeeList', 
+                    method: 'post',
+                    params: {
+                    	jsonObject: {'type':'3'}
+                    }
+                })
+				.then(function (response) {
+//					console.info(response.data.t)
+			        that.buinours = response.data.t.employeeList
+			    })
+			      .catch(function (error) {
+			        console.info(error)
+			    })
+			},
+			//查询销售主管
+			getExecutive(){
+				var that = this;
+				that.$axios({
+                    url: 'http://dvtest.qineasy.com:8888/employee/getEmployeeList', 
+                    method: 'post',
+                    params: {
+                    	jsonObject: {'type':'2'}
+                    }
+                })
+				.then(function (response) {
+//					console.info(response.data.t)
+			        that.executive = response.data.t.employeeList
+			    })
+			      .catch(function (error) {
+			        console.info(error)
+			    })
+			},
+			//查询等级
+			changeLevel(list,type){
+				var that=this
+				if(type=="M"){
+					that.showMonth='1'
+				}else{
+					that.showYear='1'
+				}
+				var that = this;
+				that.$axios({
+                    url: 'http://dvtest.qineasy.com:8888/level/getLevelList', 
+                    method: 'post',
+                    params: {
+                    	jsonObject: {
+                    		'areaId':list.areaId,
+                    		'levelType':type
+                    	}
+                    }
+                })
+				.then(function (response) {
+					that.showLevel='1'
+					if(type=="Y"){
+						that.yearLevelList=response.data.t
+					}else{
+						that.monthLevelList=response.data.t
+					}
+					
+					
+					
+			    })
+			      .catch(function (error) {
+			        console.info(error)
+			    })
+			},
+			//编辑等级
+			editLevel(type){
+				var that = this;
+				if(type=="Y"){
+					if(that.showLevelM=="1"){
+						that.showLevelY=2;
+						
+					}else{
+						alert('请先保存月等级')
+					}
+				}else{
+					if(that.showLevelY=="1"){
+						that.showLevelM=2;
+					}else{
+						alert('请先保存年等级')
+					}
+				}
+			},
+			//保存等级
+			saveLevel(type){
+				var that = this
+				that.updateStoreList=[]
+				for(var i=0;i<that.lists.length;i++){
+						var store={
+							storeNum:that.lists[i].storeNum,
+							yearLevel:that.lists[i].yearLevel,
+							monthLevel:that.lists[i].monthLevel
+						}
+						that.updateStoreList.push(store)
+					}
+					console.log(that.updateStoreList)
+				that.$axios({
+                    url: 'http://dvtest.qineasy.com:8888/store/updateStoreList', 
+                    method: 'post',
+                    params: {
+                    	jsonObject:JSON.stringify(that.updateStoreList)  
+                    }
+                })
+				.then(function (response) {
+					console.info(response.data.text)
+					if(response.data.status=='UPDATE_SUCESS'){
+						that.showLevelY=1;
+						that.showLevelM=1;
+						setTimeout(function(){
+						 that.refresh()
+						},100)
+					}
+			    })
+			      .catch(function (error) {
+			        console.info(error)
+			    })
+			}
+		},
+		events: {
+	        // 刷新数据
+	        'refresh' () {
+	            this.refresh()
+	        }
+	    }
+	}
+</script>
+<style scoped>
+.normall-table tr td {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.imgSet img{
+	width: 20px;
+}
+</style>

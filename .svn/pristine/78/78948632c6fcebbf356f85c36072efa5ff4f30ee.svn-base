@@ -1,0 +1,27 @@
+<template>
+	<div>
+		<publicMenu></publicMenu>		
+	</div>
+</template>
+<script>
+	import publicMenu from './Menu.vue'	
+	export default {
+		name: '',
+		data () {
+		  	return {
+			   
+			  }
+		 },
+		 created: function(){
+			
+		},
+		methods: {
+			
+		},
+		components: {publicMenu}
+	}
+
+</script>
+<style scoped>
+
+</style>

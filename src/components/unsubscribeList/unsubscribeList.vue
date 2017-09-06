@@ -1,0 +1,263 @@
+<template>
+	<div class="inquiry-wrapper">
+		<div class="inquiry-top container-fluid">
+			<div class="row mgb10">
+				<div class="col-md-3">
+					<label>退货编号：</label>
+					<input type="text" name="" placeholder="" v-model="param.orderNum" />
+				</div>
+				<div class="col-md-3">
+					<label>商品编号：</label>
+					<input type="text" name="" placeholder="" v-model="param.goodsCode" />
+				</div>
+				<div class="col-md-3">
+					<label>商品名称：</label>
+					<input type="text" name="" placeholder="" v-model="param.goodsName" />
+				</div>
+				<div class="col-md-3">
+					<button type="button" class="btn btn-primary" @click="refresh">查询</button>
+				</div>		
+			</div>
+			<div class="row">				
+				<div v-show="usertp==0" class="col-md-3">
+					<label>销售门店：</label>
+					<select v-model="param.storeId">
+						<option v-for="store in stores" :value="store.storeNum">{{store.storeName}}</option>
+					</select>
+				</div>
+				<div v-show="usertp==0" class="col-md-3">
+					<label>销售大区：</label>
+					<select v-model="param.areaName">
+						<option v-for="area in areas">{{area.areaName}}</option>
+					</select>
+				</div>
+				<!--
+				<div class="col-md-12">
+					<form id="formid">
+						<label for="resource">上传文档</label>
+						<input type="file" id="resource" name="resource" ref="resource">
+						<button type="button" @click="upload()">上传</button>
+					</form>
+				</div>
+				-->
+			</div>
+			<div class="clearfix"></div>
+		</div>
+
+		<div class="col-md-11">
+			<div class="col-md-12">
+				<table class="table table-bordered normall-table mgb0 boderbt0">
+					<tr>
+						<th width="15%">商品编号</th>
+						<th width="30%">商品名称</th>
+						<th width="10%">数量</th>
+						<th width="10%">销售人员</th>
+						<th width="15%">销售店铺</th>
+						<th width="10%">销售大区</th>
+						<th width="10%">退款金额</th>
+					</tr>
+				</table>
+				<table class="table table-bordered normall-table table-hover table-unsubs" v-for="list in lists">
+					<tr>
+						<td colspan="7">
+							<p>								
+								<span class="pull-left">退货编号：<i class="am-ft-orange">{{list.orderNum}}</i></span>
+								<span class="pull-right">{{list.orderTime}}</span>
+							</p>
+						</td>
+					</tr>
+					<tr v-for="det in list.orderDetails">
+						<td width="15%">{{det.goodsCode}}</td>
+						<td width="30%">{{det.goodsName}}</td>
+						<td width="10%">{{det.goodsCount}}件</td>
+						<td width="10%">{{list.employeeName}}</td>
+						<td width="15%">{{list.storeName}}</td>
+						<td width="10%">{{list.areaName}}</td>
+						<td width="10%">￥{{det.goodsPrice}}</td>
+					</tr>
+				</table>			
+				<!--分页-->
+				<button class="btn btn-default fn-left" @click="refresh" v-show="counts>0">刷新</button>
+				<boot-page v-show="counts>0" ref="page" :async="true" :data="lists" :lens="lenArr" :url="url" :page-len="pageLen" :param="param" v-on:listenToChildEvent="showMsgFormChild"></boot-page>								
+				<!--/分页-->	
+				<div v-show="counts==0">
+					<p class="text-muted am-ft-center mgt20">暂无数据</p>
+				</div>
+			</div>
+		</div>
+		<div class="clearfix"></div>
+	</div>
+</template>
+
+<script>
+	import bootPage from '../pagination.vue'
+	export default {
+	    data() {
+			return {
+				counts: '',
+				lenArr: [10], // 每页显示长度设置
+	            pageLen: 10, // 可显示的分页数
+	            url: 'http://dvtest.qineasy.com:8888/order/refundOrderList', // 请求路径
+	            param: {
+	            	employeeNum: JSON.parse(sessionStorage.userInfo)[0].employeeNum,
+					orderNum: '',
+					storeId: '5DA26907',
+					goodsCode: '',
+					goodsName: '',
+					storeName: '',
+					areaName: '',
+					nub: '0',
+					size: '10'
+	            }, // 传递参数
+	            lists: [], // 分页组件传回的分页后数据 
+	            details: [],
+	            stores: [],
+	            areas: [],
+	            usertp: JSON.parse(sessionStorage.userInfo)[0].type
+			}
+		},
+		created() {
+	      this.$nextTick(() => {	      		
+      		this.refresh()	        
+	      })
+	      this.getStores(),
+	      this.getAreas()
+		  if(JSON.parse(sessionStorage.userInfo)[0].type!=0){
+		  	this.param.storeId=JSON.parse(sessionStorage.userInfo)[0].storeId
+		  }
+		  this.param.queryTime=this.getdate().year+this.getdate().month
+		},
+		components: {
+	        bootPage
+	  	},
+		methods: {
+			// upload(){
+			// 	var formData = new FormData() // FormData 对象
+			// 	formData.append('file', this.$refs.resource.files[0])
+			// 	formData.append('jsonObject', JSON.stringify({type:1}))
+			// 	this.$http.post('http://dvtest.qineasy.com:8888/citymanager/batchImport', formData, {
+			// 		method: 'post',
+			// 		headers: {
+			// 			'Content-Type': 'multipart/form-data'
+			// 		},
+			// 		transformRequest: [function (data) {
+			// 			return data
+			// 		}],
+			// 		onUploadProgress: function(e) {
+			// 			let percentage = Math.round((e.loaded * 100) / e.total) || 0
+			// 			console.log(e, percentage)
+			// 		}
+			// 	}).then((response) => {
+			// 		if (response.data.status) {
+			// 		setTimeout(function(){
+			// 			location.reload();
+			// 		},500)				
+			// } else {
+			// 			this.$Notice.error({
+			// 				title: '错误',
+			// 				message: response.data.imgId
+			// 			})
+			// 		}
+			// 	}).catch(function (error) {
+			// 		console.log(error)
+			// 	})				
+			// },
+			getdate (){
+				let obj;
+				var data = new Date();
+				let month = data.getMonth()+1;
+				let year = data.getFullYear();
+				if(month<10){
+					month = '0'+ month
+				}else{
+					month = month
+				}
+				obj = {
+					year: year,
+					month: month
+				}
+				return obj
+			},			
+           	refresh () {
+           		var that = this;
+	            that.$refs.page.refresh()
+	        },
+			showMsgFormChild: function(data){
+				if(data!=null){
+					this.lists = data.list;	
+					this.counts = data.count;
+				}else{
+					this.lists = []
+					this.counts = 0
+				}
+			},
+			//查询门店
+			getStores(){
+				var that = this;
+				that.$axios({
+                    url: 'http://dvtest.qineasy.com:8888/store/getStoreList', 
+                    method: 'post',
+                    params: {
+                    	jsonObject: {}
+                    }
+                })
+				.then(function (response) {
+			        that.stores = response.data.t.storeList
+					// if(JSON.parse(sessionStorage.userInfo)[0].type==0){
+					// 	that.param.storeId=that.stores[0].storeNum					
+					// 	that.param.storeName=that.stores[0].storeName					
+					// }
+			    })
+			      .catch(function (error) {
+			        console.info(error)
+			    })
+			},
+			//查询区域
+			getAreas(){
+				var that = this;
+				that.$axios({
+                    url: 'http://dvtest.qineasy.com:8888/area/areaList', 
+                    method: 'post',
+                    params: {
+                    	jsonObject: {}
+                    }
+                })
+				.then(function (response) {
+//					console.info(response)
+			        that.areas = response.data.t
+			    })
+			      .catch(function (error) {
+			        console.info(error)
+			    })
+			}
+		},
+		events: {
+	        // 刷新数据
+	        'refresh' () {
+	            this.refresh()
+	        }
+	    }
+	}
+</script>
+<style scoped>
+	.table-unsubs{
+		border-top: 0;
+	}
+	.table-unsubs tr:first-child td{
+		background: #f4f4f4;
+	}
+	.table-unsubs tr td p{
+		padding: 0 15px;
+		margin-bottom: 0;
+		overflow: hidden;
+	}
+	.table-unsubs tr td span{
+		display: block;
+	}
+	.normall-table tr td {
+	    max-width: 120px;
+	    overflow: hidden;
+	    text-overflow: ellipsis;
+	    white-space: nowrap;
+	}
+</style>

@@ -1,0 +1,602 @@
+<template>
+	<div class="container-fluid">
+		<div class="dialogMask" v-if="showEditSwitch">
+			<div class="dialogDiv">
+				<div class="dialogTitle">
+					{{titleCity}}城市经理提成奖金规则
+				</div>
+				<div class="dialogContent">
+					<span>提成设置：</span>
+					<table class="table table-bordered normall-table">
+						<tr>
+							<th width="50%">完成率</th>
+							<th width="50%">提成金额</th>
+						</tr>
+						<tr>
+							<td>{{sendEditContent.bouns[0].bonusRate}}</td>
+							<td class="am-ft-left pl25"><input type="number" v-model="sendEditContent.bouns[0].salary"/></td>
+						</tr> 
+						<tr>
+							<td>{{sendEditContent.bouns[1].bonusRate}}</td>
+							<td class="am-ft-left pl25"><input type="number" v-model="sendEditContent.bouns[1].salary"/></td>
+						</tr> 
+						<tr>
+							<td>{{sendEditContent.bouns[2].bonusRate}}</td>
+							<td class="am-ft-left pl25"><input type="number" v-model="sendEditContent.bouns[2].salary"/></td>
+						</tr> 
+						<tr>
+							<td>{{sendEditContent.bouns[3].bonusRate}}</td>
+							<td class="am-ft-left pl25"><input type="number" v-model="sendEditContent.bouns[3].salary"/></td>
+						</tr> 
+						<tr>
+							<td>{{sendEditContent.bouns[4].bonusRate}}</td>
+							<td class="am-ft-left pl25"><input type="number" v-model="sendEditContent.bouns[4].salary"/></td>
+						</tr> 
+						<tr>
+							<td>{{sendEditContent.bouns[5].bonusRate}}</td>
+							<td class="am-ft-left pl25"><input type="number" v-model="sendEditContent.bouns[5].salary"/></td>
+						</tr> 						
+					</table>
+				</div>
+				<div class="dialogPbInfo">
+					<span>奖金设置：</span>
+					<p>
+						完成率超出100％，每超
+						<input type="number" v-model="sendEditContent.jsonObject.aboveRate"/>%
+						，奖金基数增加<input type="number" v-model="sendEditContent.jsonObject.aboveSalary"/>
+						乘以<input type="number" v-model="sendEditContent.jsonObject.rate"/>倍计入奖金池。
+					</p>
+				</div>
+				<div class="dialogBtn">
+					<button class="btn btn-primary" @click="postLevelCoefficient">确定</button>
+					<button class="btn btn-default" @click="showEditSwitch=false">取消</button>
+				</div>
+			</div>
+		</div>
+		<div class="page_top">
+			<h3>配置{{userInfo.userType}}提成规则</h3>
+			<p>{{userInfo.userTip}}</p>
+		</div>
+					
+		<form class="form-horizontal">
+			<div class="form-group">
+				<div class="col-sm-4" v-if="ruleType==4">
+				<!--	<label class="col-sm-1 control-label">品牌</label>
+					<div class="col-sm-3 pl0">
+						<select class="form-control">
+							<option disabled value="" selected="selected">请选择</option>
+							<option :value="area.areaId" v-for="area in areas">{{area.areaName}}</option>
+						</select>
+					</div>
+				-->
+					<label class="col-sm-3 control-label">城市</label>
+					<div class="col-sm-6 pl0">
+						<input type="text"  class="form-control" placeholder="请输入城市名" v-model="param.city"/>
+					</div>
+					<button class="btn btn-primary" @click="refresh">查询</button>
+				</div>
+				<div class="col-sm-2" v-if="ruleType==4||ruleType==5">
+					<form id="formid">
+						<button class="btn btn-primary fn-right mgr10" type="button">导入数据</button>
+						<input class="btn fn-right mgr10 opacityHide" type="file" id="resource" name="resource" ref="resource" @change="upload()">
+					</form>
+				</div>
+			</div>
+		</form>
+		<div class="col-md-10 pl0">
+			<table class="table table-bordered normall-table" v-if="ruleType<=3">
+				<tr>
+					<th width="10%">所在大区</th>
+					<th>{{userInfo.userTr1}}</th>
+					<!--<th>{{userInfo.userTr2}}</th>-->
+					<th width="10%">操作</th>
+				</tr>
+				<tr v-for="(n, index) in unConfig">
+					<td>{{n.areaName}}</td>
+					<td class="am-ft-red">--</td>
+				<!--	<td class="am-ft-red">--</td>-->
+					<td>
+						<router-link :to="{name:'DedutConfig',query: {num: $route.params.num, id: n.areaId, type: '0'}}" tag="a">配置</router-link>
+					</td>
+				</tr>
+				<tr v-for="item in levelCoefficient">
+					<td>{{item.areaName || '--'}}</td>
+					<td>
+						<table class="table normall-table" v-for="val in item.levelList">
+							<tr>
+								<td>{{val.levelName || '--'}}</td>
+							</tr>
+						</table>
+					</td>
+				<!--	<td>
+						<table class="table normall-table" v-for="val in item.levelList">
+							<tr>
+								<td v-for="v in val.royaltyRuleList">{{'提成系数'+v.ratio+'%;' || '--'}}</td>
+							</tr>
+						</table>
+					</td>-->
+					<td>
+						<router-link :to="{name:'DedutConfig',query: {num: $route.params.num, id: item.levelList[0].royaltyRuleList[0].level.area.areaId, type: '1'}}" tag="a">编辑</router-link>
+					</td>
+				</tr>
+			</table>
+			<table class="table table-bordered normall-table" v-if="ruleType>3">
+				<tr>
+					<th width="10%" rowspan="2">大区</th>
+					<th width="10%" rowspan="2">城市</th>
+					<th width="10%" rowspan="2">品牌</th>
+					<th colspan="6">{{userInfo.userTr1}}</th>
+					<th rowspan="2" width="20%">{{userInfo.userTr2}}</th>
+					<th rowspan="2" width="10%">操作</th>
+				</tr>
+				<tr>
+					<th>75%</th>
+					<th>80%</th>
+					<th>85%</th>
+					<th>90%</th>
+					<th>95%</th>
+					<th>100%</th>
+				</tr>
+				<tr v-for="(n, index) in lists">
+					<td>{{n.areaName || '--'}}</td>
+					<td>{{n.city || '--'}}</td>
+					<td>{{n.brand || '--'}}</td>
+					<td>{{n.bonus==''?'--':n.bonus[0].salary}}</td>
+					<td>{{n.bonus==''?'--':n.bonus[1].salary}}</td>
+					<td>{{n.bonus==''?'--':n.bonus[2].salary}}</td>
+					<td>{{n.bonus==''?'--':n.bonus[3].salary}}</td>
+					<td>{{n.bonus==''?'--':n.bonus[4].salary}}</td>
+					<td>{{n.bonus==''?'--':n.bonus[5].salary}}</td>
+					<td v-if="n.bonus==''">--</td>
+					<td v-else>每超出{{n.aboveRate || '-'}}%加{{n.aboveSalary || '-'}}元, 以{{n.rate || '-'}}倍计入奖金池</td>
+					<td>
+						<a @click="showEdit(n,n.bonus=='')">{{n.bonus==''?'配置':'编辑'}}</a>
+					</td>
+				</tr>
+			</table>
+			<button class="btn btn-default fn-left" @click="refresh">刷新</button>
+			<boot-page v-show="this.$route.params.num=='4'||this.$route.params.num=='5'&&this.counts" ref="page" :async="true" :data="lists" :lens="lenArr" :url="url" :len="5" :page-len="pageLen" :param="param" v-on:listenToChildEvent="showMsgFormChild"></boot-page>	
+		</div>
+	</div>		
+		
+</template>
+
+<script>
+	import bootPage from '../pagination.vue'
+	export default {
+		name: '',
+		data () {
+			return {
+				counts: '',
+				lenArr: [10], // 每页显示长度设置
+	            pageLen: 10, // 可显示的分页数
+	            url: '/api/citymanager/getBonusRuleList', // 请求路径
+	            param: {
+					city: '',
+					brand:'',
+					areaName: '',
+					ruleType: '',
+					nub: '0',
+					size: '10'
+	            }, // 传递参数
+	            lists: [], // 分页组件传回的分页后数据 
+				userInfo:{
+					userType: '', //角色类型
+					userTip: '',
+					userTr1:'',
+					userTr2:'',
+				},
+				ruleType:'',
+				areas: [],
+				unConfig: [], //未配置完成区域
+				levelCoefficient:[],//列表数据
+				showEditSwitch:false,
+				isAdd:null,
+				sendEditContent:{
+						jsonObject:{
+							ruleId:'',
+							aboveRate:'',
+							aboveSalary:'',
+							rate:'',
+						},
+						bouns:[
+							{ruleId: '',bonusRate: "75%", salary: ''},
+							{ruleId: '',bonusRate: "80%", salary: ''},
+							{ruleId: '',bonusRate: "85%", salary: ''},
+							{ruleId: '',bonusRate: "90%", salary: ''},
+							{ruleId: '',bonusRate: "95%", salary: ''},
+							{ruleId: '',bonusRate: "100%", salary: ''},
+						]
+				},
+				titleCity:null
+			}
+		},
+		created: function(){
+
+			this.$nextTick(() => {
+	        	this.refresh()	        
+	     	})	
+			this.getUserType(),
+			// this.getAreas(),
+			this.getUnconfAreas(),
+			this.getLevelCoefficient()
+		}, 
+		watch: {
+			'$route' (to, from){
+				this.refresh()
+		        this.getUserType(this.$route.params)
+		    }
+		},
+		components: {
+	        bootPage
+	  	},
+		methods: {
+			upload(){
+				var formData = new FormData() // FormData 对象
+				formData.append('file', this.$refs.resource.files[0])
+				formData.append('jsonObject', JSON.stringify({ruleType:this.param.ruleType}))
+				this.$http.post('/api/citymanager/ruleImport', formData, {
+					method: 'post',
+					headers: {
+						'Content-Type': 'multipart/form-data'
+					},
+					transformRequest: [function (data) {
+						return data
+					}],
+					onUploadProgress: function(e) {
+						let percentage = Math.round((e.loaded * 100) / e.total) || 0
+						console.log(e, percentage)
+					}
+				}).then((response) => {
+					if (response.data.status) {} else {
+						this.$Notice.error({
+							title: '错误',
+							message: response.data.imgId
+						})
+					}
+				}).catch(function (error) {
+					console.log(error)
+				})				
+			},	
+			refresh () {
+           		var that = this;
+	            that.$refs.page.refresh()
+	        },
+			showEdit(item,isAdd){
+				this.sendEditContent={
+						jsonObject:{
+							ruleId:'',
+							aboveRate:'',
+							aboveSalary:'',
+							rate:'',
+						},
+						bouns:[
+							{ruleId: '',bonusRate: "75%", salary: ''},
+							{ruleId: '',bonusRate: "80%", salary: ''},
+							{ruleId: '',bonusRate: "85%", salary: ''},
+							{ruleId: '',bonusRate: "90%", salary: ''},
+							{ruleId: '',bonusRate: "95%", salary: ''},
+							{ruleId: '',bonusRate: "100%", salary: ''},
+						]
+				}
+				this.isAdd=isAdd
+				this.showEditSwitch=true
+				this.titleCity=item.city
+				this.sendEditContent.jsonObject.ruleId=item.ruleId
+				this.sendEditContent.jsonObject.aboveRate=item.aboveRate
+				this.sendEditContent.jsonObject.aboveSalary=item.aboveSalary
+				this.sendEditContent.jsonObject.rate=item.rate
+				for(var index in this.sendEditContent.bouns){
+					this.sendEditContent.bouns[index].ruleId=item.ruleId
+					if(item.bonus[index]){
+						this.sendEditContent.bouns[index].salary=item.bonus[index].salary
+					}else{
+						this.sendEditContent.bouns[index].salary=''
+					}
+					if(!isAdd){
+						this.sendEditContent.bouns[index].bonusId=item.bonus[index].bonusId
+					}
+				}
+			},
+			getUserType() {		
+				var that = this;
+				if(that.$route.query.type=='0'){
+					that.isShow2 = false
+				}else if(that.$route.query.type=='1'){
+					that.isShow2 = true
+				}
+				if(that.$route.params.num=='1'){
+					that.userInfo.userType = '店员'
+					that.userInfo.userTip = '按当月销售排名设置提成，排名越前提成越高'
+					that.userInfo.userTr1 = '店铺等级'
+					that.userInfo.userTr2 = '员工提成系数'
+					that.ruleType='1'
+					that.param.ruleType='1'
+					this.getLevelCoefficient();
+				}else if(that.$route.params.num=='2'){
+					that.userInfo.userType = '店铺'
+					that.userInfo.userTip = '按所管辖门店月实际销售总额为基准设置'
+					that.userInfo.userTr1 = '门店月实际销售额'
+					that.userInfo.userTr2 = '提成系数'
+					that.ruleType='3'
+					that.param.ruleType='3'
+					this.getLevelCoefficient();
+				}
+				// else if(that.$route.params.num=='3'){
+				// 	that.userInfo.userType = '销售主管'
+				// 	that.userInfo.userTip = '按所管辖门店月实际销售总额为基准设置'
+				// 	that.userInfo.userTr1 = '门店月实际销售额'
+				// 	that.userInfo.userTr2 = '销售主管提成系数'					
+				// 	that.ruleType='2'
+				// 	that.param.ruleType='2'
+				// 	this.getLevelCoefficient();
+				// }
+				else if(that.$route.params.num=='4'){
+					that.userInfo.userType = '城市经理'
+					that.userInfo.userTip = '按所在城市完成指标设置提成＋奖金'
+					that.userInfo.userTr1 = '提成薪资'
+					that.userInfo.userTr2 = '指标完成率超出100％奖金规则'					
+					that.ruleType='4'
+					that.param.ruleType='1'
+				}else if(that.$route.params.num=='5'){
+					that.userInfo.userType = '大区经理'
+					that.userInfo.userTip = '按所在城市完成指标设置提成＋奖金'
+					that.userInfo.userTr1 = '大区经理提成薪资'
+					that.userInfo.userTr2 = '完成率超出100％奖金规则'					
+					that.ruleType='5'
+					that.param.ruleType='2'
+				}
+			},
+			//查询区域
+			// getAreas(){
+			// 	var that = this;
+			// 	that.$axios({
+            //         url: '/api/area/areaList', 
+            //         method: 'post',
+            //         params: {
+            //         	jsonObject: {}
+            //         }
+            //     })
+			// 	.then(function (response) {
+			//         that.areas = response.data.t
+			//         console.info(that.areas)
+			//     })
+			//       .catch(function (error) {
+			//         console.info(error)
+			//     })
+			// },
+			//查询未配置完成的区域
+			getUnconfAreas(){
+				var that = this;
+				that.$axios({
+                    url: '/api/royaltyRule/getUncompleteList', 
+                    method: 'post',
+                    params: {
+                    	jsonObject: that.param.ruleType
+                    }
+                })
+				.then(function (response) {
+			        that.unConfig = response.data.t
+			    })
+			      .catch(function (error) {
+			        console.info(error)
+			    })
+			},
+			//获取列表
+			getLevelCoefficient(){
+				var that = this;
+				that.$axios({
+                    url: '/api/royaltyRule/getAllRoyaltyRuleList', 
+                    method: 'post',
+                    params: {
+                    	jsonObject: {
+							ruleType:that.ruleType
+						}
+                    }
+                })
+				.then(function (response) {
+			        that.levelCoefficient = response.data.t
+					// var obj =[]
+					// for(var item in response.data.t){
+					// 	console.log(response.data.t[item])
+					// 	if(item!=0 && response.data.t[item].level.area.areaName==response.data.t[item-1].level.area.areaName){
+					// 			var isIn=that.returnList(obj,obj[item-1],item)
+					// 			isIn.childList.push({
+					// 				areaName:response.data.t[item].level.area.areaName,
+					// 				levelName:response.data.t[item].level.levelName,
+					// 				ruleId:response.data.t[item].ruleId,
+					// 				ratio:response.data.t[item].ratio,
+					// 				levelType:response.data.t[item].level.levelType,
+					// 				areaId:response.data.t[item].level.area.areaId,
+					// 			})
+					// 	}else{
+					// 		obj.push({
+					// 			areaName:response.data.t[item].level.area.areaName,
+					// 			levelName:response.data.t[item].level.levelName,
+					// 			ruleId:response.data.t[item].ruleId,
+					// 			ratio:response.data.t[item].ratio,
+					// 			levelType:response.data.t[item].level.levelType,
+					// 			areaId:response.data.t[item].level.area.areaId,
+					// 			childList:[]
+					// 		})
+					// 	}
+					// }
+					// that.levelCoefficient=obj;
+			    })
+			      .catch(function (error) {
+			        console.info(error)
+			    })				
+			},
+			returnList(first,last,index){
+				if(last){
+					return last;
+				}else{
+					index--
+					return this.returnList(first,first[index-1],index)
+				}
+			},
+			//添加修改规则
+			postLevelCoefficient(){
+				var that = this;
+				//添加
+				if(this.isAdd){
+					that.$axios({
+						url: '/api/citymanager/deployBonusRule', 
+						method: 'post',
+						params:{
+							jsonObject:this.sendEditContent.jsonObject,
+							bouns:JSON.stringify(this.sendEditContent.bouns)
+						}
+					})
+					.then(function (response) {
+						console.log(response)
+					})
+					.catch(function (error) {
+						console.info(error)
+					})				
+				}else{
+					//修改
+					that.$axios({
+						url: '/api/citymanager/updateBonusRule', 
+						method: 'post',
+						params:{
+							jsonObject:this.sendEditContent.jsonObject,
+							bouns:JSON.stringify(this.sendEditContent.bouns)
+						}
+					})
+					.then(function (response) {
+						console.log(response)
+					})
+					.catch(function (error) {
+						console.info(error)
+					})	
+				}
+			},
+			//分页
+			showMsgFormChild: function(data){
+	        	if(data){
+					this.lists = data.list;	
+					this.counts = data.count;
+				}else{
+					this.lists = []	
+					this.counts = null;					
+				}
+			},
+		},
+		events: {
+			// 刷新数据
+			'refresh' () {
+				this.refresh()
+			}
+		}
+	}
+</script>
+
+<style scoped>
+	.opacityHide{
+		opacity: 0;
+	}
+	#formid{
+		position:relative;
+		overflow:hidden;
+		float:left;
+	}
+	#formid input{
+		position:absolute;
+		right:0;
+		top:0;
+	}
+	.normall-table tr td {
+	    max-width: 300px;
+	    overflow: hidden;
+	    text-overflow: ellipsis;
+	    white-space: nowrap;
+	    border: 1px solid #f4f4f4;
+	}
+	.normall-table table{
+		margin-bottom: 0;
+	}
+	.normall-table table tr td{
+	    border: 0;
+    	border-bottom: 1px solid #f4f4f4;
+    	text-align: center;
+    	padding-left: 10%;
+	}
+	.normall-table table tr:last-child td{
+	    border-bottom: 0;
+	}
+	.dialogMask{
+		position: fixed;
+		width: 100%;
+		height: 100%;
+		 background: rgba(0,0,0,0.45); 
+		z-index: 99999999;
+		color: #fff;
+		left:0;
+		top:0;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+	}
+	.dialogMask .dialogDiv{
+		width: 600px;
+		background: #fff;
+		overflow: hidden;
+		border-radius: 5px;
+	}
+	.dialogTitle{
+		color: #000;
+		height: 30px;
+		line-height: 20px;
+		padding: 5px;
+		padding-left: 20px;
+		background: #e1e1e1;
+		color: #333;
+	}
+	.dialogDiv .dialogContent{
+		padding: 10px;
+		overflow: hidden;
+	}
+	.dialogDiv .dialogContent span{
+		width: 20%;
+		float: left;
+		color: #333;
+		text-align: center;
+		line-height: 36px;
+		border-bottom: 1px solid #e1e1e1;
+	}
+	.dialogDiv .dialogContent table{
+		width: 80%;
+		float: right;
+		color: #333;
+	}
+	.dialogDiv .dialogPbInfo{
+		overflow: hidden;
+	}
+	.dialogDiv .dialogPbInfo span{
+		width: 20%;
+		float: left;
+		color: #333;
+		text-align: center;
+		line-height: 36px;
+	}
+	.dialogDiv .dialogPbInfo p{
+		width: 80%;
+		float: right;
+		color: #333;
+		padding: 5px;
+	}
+	.dialogDiv .dialogPbInfo input{
+		width: 40px;
+	}
+	.dialogDiv .dialogBtn{
+		width: 100%;
+		overflow: hidden;
+		height: 50px;
+	}
+	.dialogDiv .dialogBtn button{
+		float: right;
+		margin: 0 10px;
+		padding: 5px 30px;
+	}
+</style>

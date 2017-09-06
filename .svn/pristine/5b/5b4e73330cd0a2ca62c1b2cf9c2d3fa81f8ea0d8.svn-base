@@ -1,0 +1,730 @@
+<template>
+	<div class="inquiry-wrapper">
+		<div class="inquiry-top container-fluid">
+			<div class="row mgb10">
+				<div class="col-md-3">
+					<label>门店编号：</label>
+					<input type="text" name="" placeholder="" v-model="param.storeNum" />
+				</div>
+				<div class="col-md-3">
+					<label>门店名称：</label>
+					<input type="text" name="" placeholder="" v-model="param.storeName" />
+				</div>
+				<!--<div class="col-md-3">
+					<label>销售主管：</label>
+					<select v-model="param.salesId">
+						<option value="" selected="selected">不限</option>
+						<option v-for="n in executive" :value="n.employeeId">{{n.employeeName}}</option>
+					</select>
+				</div>-->
+				<div class="col-md-3">
+					<button type="button" class="btn btn-primary" @click="refresh">查询</button>
+				</div>
+			</div>		
+			<div class="row">
+				<div class="col-md-12 pb10">
+					<button class="btn btn-primary fn-left" @click="download">导出模板</button>
+					<form id="formid">
+						<button class="btn btn-primary fn-left mgl10" type="button">导入数据</button>
+						<input class="btn fn-left mgr10 opacityHide" type="file" id="resource" name="resource" ref="resource" @change="upload()">
+					</form>
+					<!--<router-link class="btn btn-primary fn-right" :to="{path: dataurl, query: {jsonObject: JSON.stringify(param)}}" tag="a">导出数据</router-link>-->
+				</div>				
+			</div>	
+			<!--<div class="row">
+				<div class="col-md-3">
+					<label>店长：</label>
+					<select v-model="param.ownerId">
+						<option value="" selected="selected">不限</option>
+						<option v-for="n in buinours" :value="n.employeeId">{{n.employeeName}}</option>
+					</select>
+				</div>
+				<div class="col-md-3">
+					<label>等级：</label>
+					<select v-model="param.yearLevel">
+						<option value="" selected="selected">不限</option>
+						<option v-for="n in grades" :value="n.levelId">{{n.levelName}}</option>
+					</select>
+				</div>
+				<div class="col-md-3">
+					<button type="button" class="btn btn-primary" @click="refresh">查询</button>
+				</div>
+			</div>-->
+			<div class="clearfix"></div>
+		</div>
+
+		<div class="col-md-12 ofxscroll">
+			<div class="col-md-12 pb10">
+				<span class="fn-left mgt5">查询结果（{{counts}}）</span>
+				<!--<button type="button" class="btn btn-primary fn-right">导出数据</button>-->
+			</div>
+			<div class="col-md-12">
+				<table class="table table-bordered normall-table table-hover">
+					<tr>
+						<th>门店ID</th>
+						<th>店铺编号</th>
+						<th>店铺名称</th>
+						<th>店铺大区</th>
+						<th>店铺城市</th>
+						<th>店铺品牌</th>
+						<th>店铺管理模式</th>
+						<th>编制人数</th>
+						<th>零售助理</th>
+						<th>店长</th>
+						<th>大店长</th>
+						<th>销售主管</th>
+						<th>城市经理</th>
+						<th>大区经理</th>
+						<th class='imgSet'>店铺年等级
+							<img @click="editLevel('Y')" v-if="showLevelY=='1'" src="../../assets/icon_edit.png" />
+							<img @click="saveLevel('Y')" v-if="showLevelY=='2'" src="../../assets/icon_save.png" />
+						</th>
+						<th class='imgSet'>店铺月等级
+							<img @click="editLevel('M')" v-if="showLevelM=='1'" src="../../assets/icon_edit.png" />
+							<img @click="saveLevel('M')" v-if="showLevelM=='2'" src="../../assets/icon_save.png" />
+						</th>
+						<th width="10%">开店时间</th>
+						<th width="10%">撤店时间</th>
+						<th width="10%">操作</th>
+					</tr>
+					<tr v-for="list in lists">
+						<td>{{list.storeId}}</td>
+						<td>{{list.storeNum}}</td>
+						<td>{{list.storeName}}</td>
+						<td>{{list.areaName}}</td>
+						<td>{{list.cs}}</td>
+						<td>{{list.pp}}</td>
+						<td>{{list.storeType}}</td>
+						<td>{{list.employeeCount}}</td>
+						<td>{{list.retailName}}</td>
+						<td>{{list.ownerName}}</td>
+						<td>{{list.dOwnerName}}</td>
+						<td>{{list.salesName}}</td>
+						<td>{{list.csOwnerName}}</td>
+						<td>{{list.dqOwnerName}}</td>
+						<td>
+							<span v-show="showLevelY=='1'">{{list.yearLevelName}}</span>
+							<select v-show="showLevelY=='2'"   @click="changeLevel(list,'Y')" v-model='list.yearLevel'>
+								<option :value="list.yearLevel" v-if='showYear=="0"' >{{list.yearLevelName}}</option>
+								<option :value="item.level.levelId"   v-for="item in yearLevelList">{{item.level.levelName}}</option>
+							</select>
+							<!--<p>Selected: {{list.yearLevel}}</p>-->
+						</td>
+						<td>
+							<span v-show="showLevelM=='1'">{{list.monthLevelName}}</span>
+							<select v-show="showLevelM=='2'"   @click="changeLevel(list,'M')" v-model='list.monthLevel'>
+								<option :value="list.monthLevel"  v-if='showMonth=="0"'>{{list.monthLevelName}}</option>
+								<option :value="item.level.levelId" v-for="item in monthLevelList">{{item.level.levelName}}</option>
+							</select>
+							<!--<p>Selected: {{list.monthLevel}}</p>-->
+						</td>
+						<td>{{list.storeTime}}</td>
+						<td>{{list.endTime}}</td>
+						<td>
+							<button type="button" class="btn btn-default btn-save" data-toggle="modal" data-target="#myModal" @click="editStore(list)">编辑</button>
+							<!--<router-link :to="{name:'editStore',query: list}" class='urlStyle' tag="a">编辑</router-link>-->
+						</td>
+					</tr>
+				</table>
+				<!--分页-->
+				<button class="btn btn-default fn-left" @click="refresh" v-show="counts>0">刷新</button>
+				<boot-page v-show="counts>0" ref="page" :async="true" :data="lists" :len="10" :url="url" :page-len="pageLen" :param="param" v-on:listenToChildEvent="showMsgFormChild"></boot-page>								
+				<!--/分页-->	
+				<div v-show="counts==0">
+					<p class="text-muted am-ft-center mgt20">暂无数据</p>
+				</div>
+			</div>
+		</div>
+		
+			<!-- 模态框（Modal） -->
+	<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+		<div class="modal-dialog" style="width: 800px;">
+			<div class="modal-content">
+				<div class="modal-header bg-f4">
+					<button type="button" class="close"  @click='concelEdit()'>×
+					</button>
+					<h5 class="modal-title" id="myModalLabel">
+						{{editObj.areaName}}_{{editObj.storeName}}({{editObj.storeNum}})
+					</h5>
+				</div>	
+				<div class="editModal">
+					<div  class="row">
+						<div class="col-md-2 am-ft-right">店铺品牌：</div>
+						<div class="col-md-3 ">
+							<select class="width150" v-model='editObj.pp'>
+								<option value="JNBY">JNBY</option>
+								<option value="less">less</option>
+								<option value="速写">速写</option>
+							</select>
+						</div>
+					</div>
+					<div  class="row">
+						<div class="col-md-2 am-ft-right">管理模式：</div>
+						<div class="col-md-3">
+							<input type="text" v-model="editObj.storeType" class="width150"/>
+						</div>
+					</div>
+					<div  class="row">
+						<div class="col-md-2 am-ft-right">编制人数：</div>
+						<div class="col-md-3">
+							<input type="number" class="width150" v-model="editObj.employeeCount" />
+						</div>
+					</div>
+					<div  class="row">
+						<div class="col-md-2 am-ft-right">年等级：</div>
+						<div class="col-md-3">
+							<select class="width150"  v-model='editObj.yearLevel' @change='selectLevel(editObj,"Y")'>
+								<option :value="item.level.levelId"  v-for="item in yearLevelList">{{item.level.levelName}}</option>
+							</select>
+						</div>
+						<div class="col-md-2 am-ft-right mgl-60">月等级：</div>
+						<div class="col-md-3">
+							<select class="width150"  v-model='editObj.monthLevel' @change='selectLevel(editObj,"M")'>
+								<option :value="item.level.levelId"   v-for="item in monthLevelList">{{item.level.levelName}}</option>
+							</select>
+						</div>
+					</div>
+					<div  class="row">
+						<div class="col-md-2 am-ft-right">开店时间：</div>
+						<div class="col-md-3">
+							<input type="date" class="width150" v-model="editObj.storeTime"/>
+						</div>
+						<div class="col-md-2 am-ft-right mgl-60">撤店时间：</div>
+						<div class="col-md-3">
+							<input type="date" class="width150" v-model="editObj.endTime"/>
+						</div>
+					</div>
+					<div  class="row">
+						<div class="col-md-2 am-ft-right">所属城市：</div>
+						<div class="col-md-3">
+							<select class="width150" v-model="editObj.cs">
+								<option :value="item.cs"   v-for="item in cityList">{{item.cs}}</option>
+							</select>
+						</div>
+						<div class="col-md-2 am-ft-right mgl-60">城市经理：</div>
+						<div class="col-md-3">
+							<div class="pos-relative">
+								<input type="text"  class="width150"
+	                                   v-model="editObj.csOwnerName" @focus="getType(editObj.csOwnerName,'4')"
+	                                   @change="getType(editObj.csOwnerName,'4')" @blur="hideList('4')"/>
+	                            <div class="pronum-seach" style="z-index: 13;">
+	                               <p v-for="item in csList"  @click="selectType(item,'4')">{{item.employeeName}}</p>
+	                            </div>
+                            </div>
+							<!--<select class="width150" v-model="editObj.csOwnerName">
+								<option>小葛</option>
+								<option>20w-40w</option>
+							</select>-->
+						</div>
+					</div>
+					<div  class="row">
+						<div class="col-md-2 am-ft-right">大区经理：</div>
+						<div class="col-md-3">
+							<div class="pos-relative">
+								<input type="text"   class="width150"
+	                                   v-model="editObj.dqOwnerName" @focus="getType(editObj.dqOwnerName,'5')"
+	                                   @change="getType(editObj.dqOwnerName,'5')" @blur="hideList('5')"/>
+	                            <div class="pronum-seach" style="z-index: 13;">
+	                               <p v-for="item in dqList"  @click="selectType(item,'5')">{{item.employeeName}}</p>
+	                            </div>
+                            </div>
+						</div>
+						<div class="col-md-2 am-ft-right mgl-60">销售主管：</div>
+						<div class="col-md-3">
+							<div class="pos-relative">
+								<input type="text"   class="width150"
+	                                   v-model="editObj.salesName" @focus="getType(editObj.salesName,'2')"
+	                                   @change="getType(editObj.salesName,'2')" @blur="hideList('2')"/>
+	                            <div class="pronum-seach" >
+	                               <p v-for="item in buinours"  @click="selectType(item,'2')">{{item.employeeName}}</p>
+	                            </div>
+                            </div>
+						</div>
+					</div>
+					<div  class="row">
+						<div class="col-md-2 am-ft-right">大店长：</div>
+						<div class="col-md-3">
+							<div class="pos-relative">
+								<input type="text"   class="width150"
+	                                   v-model="editObj.dOwnerName" @focus="getType(editObj.dOwnerName,'7')"
+	                                   @change="getType(editObj.dOwnerName,'7')" @blur="hideList('7')"/>
+	                            <div class="pronum-seach">
+	                               <p v-for="item in ddzList"  @click="selectType(item,'7')">{{item.employeeName}}</p>
+	                            </div>
+                            </div>
+						</div>
+						<div class="col-md-2 am-ft-right mgl-60">店长：</div>
+						<div class="col-md-3">
+							<div class="pos-relative">
+								<input type="text"   class="width150"
+	                                   v-model="editObj.ownerName" @focus="getType(editObj.ownerName,'3')"
+	                                   @change="getType(editObj.ownerName,'3')" @blur="hideList('3')"/>
+	                            <div class="pronum-seach" style="z-index: 11;">
+	                               <p v-for="item in executive"  @click="selectType(item,'3')">{{item.employeeName}}</p>
+	                            </div>
+                            </div>
+						</div>
+					</div>
+					<div  class="row">
+						<div class="col-md-2 am-ft-right">零售助理：</div>
+						<div class="col-md-3">
+							<div class="pos-relative">
+								<input type="text"   class="width150"
+	                                   v-model="editObj.retailName" @focus="getType(editObj.retailName,'6')"
+	                                   @change="getType(editObj.retailName,'6')" @blur="hideList('6')"/>
+	                            <div class="pronum-seach" style="z-index: 11;">
+	                               <p v-for="item in lsList"  @click="selectType(item,'6')">{{item.employeeName}}</p>
+	                            </div>
+                            </div>
+						</div>
+					</div>
+				</div>
+				<div class="w100 am-ft-center modal-footer">
+					<button class="btn btn-default btn-concel "   @click='concelEdit()' >取消</button>
+					<button class="btn btn-default btn-save" @click='saveEdit(editObj)'>保存</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="clearfix"></div>
+	</div>
+</template>
+
+<script>
+	import bootPage from '../pagination.vue'
+	export default {
+		 data () {
+	        return {
+	            counts: '',
+				lenArr: [10], // 每页显示长度设置
+	            pageLen: 10, // 可显示的分页数
+	            url: 'http://dvtest.qineasy.com:8888/store/getStoreList', // 请求路径
+	         //   url: 'http://dvtest.qineasy.com:8888/store/getStoreList', // 请求路径
+	            param: {
+	            	storeNum: '',
+					storeName: '',
+					salesId: '',
+					ownerId: "",
+					yearLevel: '',
+					nub: '0',
+					size: '10'
+	            }, // 传递参数
+	            lists: [], // 分页组件传回的分页后数据
+	            grades: [],
+	            buinours: [],//销售主管
+	            executive: [],//店长
+	            csList: [],//城市经理
+	            dqList: [],//大区经理
+	            ddzList: [],//大店长
+	            lsList: [],//零售助理
+            	showLevelY:'1',//默认年等级显示编辑图标
+				showLevelM:'1',//默认月等级显示编辑图标
+				monthLevelList:[],//月等级列表
+				yearLevelList:[],//年等级列表
+				showMonth:'0',//默认下拉框显示月等级
+				showYear:'0',//默认下拉框显示年等级
+				updateStoreList:[],//存放保存的数据
+				editObj:{},//保存编辑门店信息
+				cityList:[]//城市列表
+	        }
+	    },
+	    created() {
+	      this.$nextTick(() => {
+	        this.refresh()
+	      })
+	      this.getGrades()
+//	      this.getType('2')//2 销售主管
+//	      this.getType('3')//3店长
+		  if(JSON.parse(sessionStorage.userInfo)[0].type==0){}else{
+		  	this.param.ownerId=JSON.parse(sessionStorage.userInfo)[0].employeeNum
+		  }
+		},
+	    components: {
+	        bootPage
+	  	},
+		methods: {
+			upload(){
+				var formData = new FormData() // FormData 对象
+				formData.append('file', this.$refs.resource.files[0])
+				formData.append('jsonObject', '')
+				this.$http.post('http://dvtest.qineasy.com:8888/excel/storeImport', formData, {
+					method: 'post',
+					headers: {
+						'Content-Type': 'multipart/form-data'
+					},
+					transformRequest: [function (data) {
+						return data
+					}],
+					onUploadProgress: function(e) {
+						let percentage = Math.round((e.loaded * 100) / e.total) || 0
+						console.log(e, percentage)
+					}
+				}).then((response) => {
+					if (response.data.status) {
+						setTimeout(function(){
+							location.reload();
+						},500)						
+					} else {
+						this.$Notice.error({
+							title: '错误',
+							message: response.data.imgId
+						})
+					}
+				}).catch(function (error) {
+					console.log(error)
+				})				
+			},					
+			//下载模板
+			download(){
+				var that = this;
+				window.open('http://dvtest.qineasy.com:8888/excel/exportMouldExcel?jsonObject=3');
+			},			
+           	refresh () {
+           		var that = this;
+	            that.$refs.page.refresh()
+	        },
+			showMsgFormChild: function(data){
+	            this.lists = data.storeList;	
+	            for(var item in this.lists){
+	            	this.lists[item].storeTime=this.lists[item].storeTime.substring(0,10)
+	            	this.lists[item].endTime=this.lists[item].endTime.substring(0,10)
+	            }
+				console.info(this.lists)
+	            this.counts = data.count;
+			},
+			//查询等级
+			getGrades(){
+				var that = this;
+				that.$axios({
+                    url: 'http://dvtest.qineasy.com:8888/level/getLevelList', 
+                    method: 'post',
+                    params: {
+                    	jsonObject: {}
+                    }
+                })
+				.then(function (response) {
+			        that.grades = response.data.t
+			    })
+			      .catch(function (error) {
+			        console.info(error)
+			    })
+			},
+			//选择等级
+			selectLevel(obj,type){
+				var that=this
+				if(type=="M"){
+					that.editObj.monthLevelName=obj.monthLevelName
+				}else{
+					that.editObj.yearLevelName=obj.yearLevelName
+				}
+			},
+			//查询员工类型
+			getType(name,type){// 1:员工 2:销售主管 3:店长 4:城市经理 5:大区经理 6:零售助理7 大店长
+				var that = this;
+				console.log(type)
+				that.$axios({
+                    url: 'http://10.0.17.197:80/employee/getManageList', 
+                    method: 'post',
+                    params: {
+                    	jsonObject: {
+                    		'type':type,
+                    		'employeeName':name,
+                    		'nub':'0',
+                    		'size':'15'
+                    	}
+                    }
+                })
+				.then(function (response) {
+					console.info(response.data.t)
+					if(type=="2"){
+						that.buinours = response.data.t.employeeList
+					}
+					else if(type=="3"){
+				        that.executive = response.data.t.employeeList
+				        	console.log(that.executive)
+					}
+					else if(type=="4"){
+						that.csList = response.data.t.employeeList
+					}
+					else if(type=="5"){
+				        that.dqList = response.data.t.employeeList
+					}
+					else if(type=="6"){
+				        that.lsList = response.data.t.employeeList
+					}
+					else if(type=="7"){
+				        that.ddzList = response.data.t.employeeList
+					}
+			    })
+			      .catch(function (error) {
+			        console.info(error)
+			    })
+			},
+			//选择员工
+			selectType(obj,type){// 1:员工 2:销售主管 3:店长 4:城市经理 5:大区经理 6:零售助理7 大店长
+				var that=this
+				if(type=="2"){
+					that.editObj.salesName=obj.employeeName
+					that.editObj.salesId=obj.employeeNum
+				}
+				else if(type=="3"){
+					that.editObj.ownerName=obj.employeeName
+					that.editObj.ownerId=obj.employeeNum
+				}
+				else if(type=="4"){
+					that.editObj.csOwnerName=obj.employeeName
+					that.editObj.csOwnerId=obj.employeeNum
+				}
+				else if(type=="5"){
+					that.editObj.dqOwnerName=obj.employeeName
+					that.editObj.dqOwnerId=obj.employeeNum
+				}
+				else if(type=="6"){
+					that.editObj.retailName=obj.employeeName
+					that.editObj.retailId=obj.employeeNum
+				}
+				else if(type=="7"){
+					that.editObj.dOwnerName=obj.employeeName
+					that.editObj.dOwnerId=obj.employeeNum
+				}
+				
+				
+			},
+			//隐藏下拉菜单
+			hideList(type){
+				var that=this
+				console.log(that.editObj)
+				console.log(type)
+				setTimeout(function() {
+					that.buinours=undefined
+					that.executive=undefined
+					that.csList=undefined
+					that.dqList=undefined
+					that.lsList=undefined
+					that.ddzList=undefined
+				}, 300);
+			},
+			//查询等级
+			changeLevel(list,type){
+				var that=this
+				if(type=="M"){
+					that.showMonth='1'
+				}else{
+					that.showYear='1'
+				}
+				that.$axios({
+                    url: 'http://dvtest.qineasy.com:8888/level/getLevelList', 
+                    method: 'post',
+                    params: {
+                    	jsonObject: {
+                    		'areaId':list.areaId,
+                    		'levelType':type
+                    	}
+                    }
+                })
+				.then(function (response) {
+					if(type=="Y"){
+						that.yearLevelList=response.data.t
+					}else{
+						that.monthLevelList=response.data.t
+					}
+						console.log(response)
+			    })
+			      .catch(function (error) {
+			        console.info(error)
+			    })
+			},
+			//取消编辑
+			concelEdit(){
+				$('#myModal').modal('hide') 
+				 this.refresh()
+			},
+			//编辑等级
+			editLevel(type){
+				var that = this;
+				if(type=="Y"){
+					if(that.showLevelM=="1"){
+						that.showLevelY=2;
+					}else{
+						alert('请先保存月等级')
+					}
+				}else{
+					if(that.showLevelY=="1"){
+						that.showLevelM=2;
+					}else{
+						alert('请先保存年等级')
+					}
+				}
+			},
+			//保存等级
+			saveLevel(type){
+				var that = this
+				that.updateStoreList=[]
+				for(var i=0;i<that.lists.length;i++){
+						var store={
+							storeNum:that.lists[i].storeNum,
+							yearLevel:that.lists[i].yearLevel,
+							monthLevel:that.lists[i].monthLevel
+						}
+						that.updateStoreList.push(store)
+					}
+				that.$axios({
+                    url: 'http://dvtest.qineasy.com:8888/store/updateStoreList', 
+                    method: 'post',
+                    params: {
+                    	jsonObject:JSON.stringify(that.updateStoreList)  
+                    }
+                })
+				.then(function (response) {
+					console.info(response.data.text)
+					if(response.data.status=='UPDATE_SUCESS'){
+						that.showLevelY=1;
+						that.showLevelM=1;
+						setTimeout(function(){
+						 that.refresh()
+						},100)
+					}
+			    })
+			      .catch(function (error) {
+			        console.info(error)
+			    })
+			},
+			//查询城市
+			seachCity(areaId){
+				var that = this
+				that.$axios({
+                    url: 'http://10.0.17.197:80/store/getStoreCsList', 
+                    method: 'post',
+                    params: {
+                    	jsonObject: {
+                    		'areaId':areaId
+                    	}
+                    }
+                })
+				.then(function (response) {
+					that.cityList=response.data.t.storeList
+					console.log(response)
+			    })
+			      .catch(function (error) {
+			        console.info(error)
+			    })
+			},
+			//编辑门店信息
+			editStore(list){
+				var that=this
+				that.editObj=list
+				console.log(that.editObj)
+				that.changeLevel(that.editObj,'M')
+				that.changeLevel(that.editObj,'Y')
+				that.seachCity(that.editObj.areaId)
+			},
+			//保存门店信息
+			saveEdit(obj){
+				var that = this
+				that.$axios({
+                    url: 'http://10.0.17.197:80/store/updateStore', 
+                    method: 'post',
+                    params: {
+                    	jsonObject: {
+                    		'storeNum':obj.storeNum,
+                    		'storeName':obj.storeName,
+                    		'yearLevel':obj.yearLevel,
+                    		'monthLevel':obj.monthLevel,
+                    		'ownerId':obj.ownerId,
+                    		'salesId':obj.salesId,
+                    		'retailId':obj.retailId,
+                    		'areaId':obj.areaId,
+                    		'storeType':obj.storeType,
+                    		'storeStatus':obj.storeStatus,
+                    		'employeeCount':obj.employeeCount,
+                    		'dOwnerId':obj.dOwnerId,
+                    		'csOwnerId':obj.csOwnerId,
+                    		'dqOwnerId':obj.dqOwnerId,
+                    		'cs':obj.cs,
+                    		'pp':obj.pp,
+                    		'endTime':obj.endTime
+                    	}
+                    }
+                })
+				.then(function (response) {
+					if(response.data.status=="UPDATE_SUCESS"){
+						$('#myModal').modal('hide') 
+					}
+					console.log(response)
+//					that.cityList=response.data.t.storeList
+					console.log(response)
+			    })
+			      .catch(function (error) {
+			        console.info(error)
+			    })
+			}
+		},
+		events: {
+	        // 刷新数据
+	        'refresh' () {
+	            this.refresh()
+	        }
+	    }
+	}
+</script>
+<style scoped>
+table th{
+	padding: 0 5px;
+	white-space: nowrap;
+}
+table tr td{
+	white-space: nowrap;
+}
+body,table{
+	font-size:12px;
+}
+table{
+		empty-cells:show; 
+		border-collapse: collapse;
+		margin:0 auto;
+}	
+.normall-table tr td {
+    max-width: 120px;
+    overflow: hidden;
+	text-overflow: clip;
+    white-space: nowrap;
+	padding: 8px;
+}
+.imgSet img{
+	width: 20px;
+}
+.ofxscroll{
+	overflow-x: scroll;
+}
+.table tbody tr td{
+	vertical-align:middle;
+}
+table th{
+	padding: 0 5px;
+	white-space: nowrap;
+}
+table td{
+	white-space: nowrap;
+}
+body,table{
+	font-size:12px;
+}
+table{
+	empty-cells:show; 
+	border-collapse: collapse;
+	margin:0 auto;
+}
+.opacityHide{
+	opacity: 0;
+}
+#formid{
+	position:relative;
+	overflow:hidden;
+}
+#formid input{
+	position:absolute;
+	left:0;
+	top:0;
+	height:100%;
+}
+</style>

@@ -1,0 +1,256 @@
+@charset "utf-8";
+/* CSS Document */
+/*////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Author: 陶惠文
+Please backup before modification
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
+/*==== Menu ====*/
+.treeview a i[class~=fa]{
+    display: inline-block;
+    float: left;
+    font-size: 16px;
+    margin-right: 10px;
+}
+.loginTime{
+    color: #f4f4f4;
+    line-height: 50px;
+    font-size: 14px;
+}
+.messages-info i.fa{
+    font-size: 18px;
+}
+.navbar-nav .badge{
+    background: #ff0000;
+    position: absolute;
+    top: 12px;
+    left: 22px;
+    padding: 1px 5px;
+    font-size: 7px;
+    font-weight: normal;
+}
+.user-menu a{
+    font-size: 14px;
+}
+.user-menu a:hover{
+    color: #337ab7;
+}
+.top-exit{
+    color: #ea422f!important;
+    font-size: 14px;
+}
+.sidebar-menu{
+    width: 140px;
+    padding-top: 6px;
+    background: #323846;
+    height: 100%;
+    position: absolute;
+    left: 0;
+    top: 50px;
+}
+.logo .logo-lg img,.logo .logo-mini img{
+    margin-top: -7px;
+}
+.inMenu-node{
+    width: 140px;
+    height: 100%;
+    position: absolute;
+    left: 140px;
+    font-size: 12px;
+    background-color: #efeff4;
+    padding-top: 14px;
+    overflow-y: auto;
+}
+.content-header{
+    position: fixed;
+    top: 50px;
+    left: 140px;
+    z-index: 10;
+    background: #fff!important;
+    width: 100%;
+    padding-bottom: 15px;
+}
+.sidebar-mini i.fa-bars{
+    transform: rotate(90deg);
+    -webkit-transform: rotate(90deg);
+    -moz-transform: rotate(90deg);
+}
+.sidebar-mini.sidebar-collapse i.fa-bars{
+    transform: rotate(0);
+    -webkit-transform: rotate(0);
+    -moz-transform: rotate(0);
+}
+.inner-menu {
+    width: 100%;
+    font-size: 12px;
+    background-color: #3b3e48;
+    padding-left: 0;
+}
+.inner-menu>li>a {
+    padding: 0 5px 0 46px;
+    display: block;
+    height: 32px;
+    line-height: 32px;
+    font-size: 12px!important;
+    background-color: #3b3e48;
+}
+.inner-menu>li a:hover, 
+.inner-menu>li a.active {
+    background: #44474e;
+    color: #ffffff;
+}
+/*==== right content====*/
+.breadcrumb{
+    background: none;
+    padding: 8px 15px 8px 0;
+    margin: 6px 0;
+}
+/*信息提示框*/
+.alert_min{
+    width: 20%;
+    text-align: center;
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    margin-left: -10%;
+}
+.alert-softdanger{
+    color: #a94442 !important;
+    background-color: #f2dede !important;
+    border-color: #ebccd1 !important;
+}
+/*通用表格*/
+.normall-table tr th{
+	text-align: center;
+	background: #dddce0;
+	line-height: 36px;
+}
+.normall-table tr td{
+	padding: 10px 0;
+	text-align: center;
+}
+.normall-table tr.graytr td{
+	color: #9d9e9e;
+	background: #F4F4F4;
+}
+/*查询列表*/
+.inquiry-wrapper,
+.inquiry-top{
+	width: 100%;
+	box-sizing: border-box;
+}
+.inquiry-wrapper .inquiry-top{
+	background: #F4F4F4;
+	padding: 15px 30px;
+	margin-bottom: 15px;
+}
+.inquiry-top label{
+	font-weight: normal;
+	display: inline-block;
+	min-width: 70px;
+}
+.inquiry-top .min_input{
+	max-width: 100px;
+}
+.inquiry-top input,
+.inquiry-top select{
+	display: inline-block;
+	width: 160px;
+	height: 26px;
+	line-height: 26px;
+    padding: 0 5px;
+    border-radius: 3px;
+    -webkit-border-radius: 3px;
+    border: 1px solid #dddddd;
+    box-sizing: border-box;
+}
+.inquiry-top button{
+    padding: 4px 18px;	
+}
+.inquiry-wrapper .line_btn{
+	color: #0ae;
+	border: 1px solid;
+	border-radius: 4px;
+}
+.inquiry-wrapper .line_btn:hover{
+	background: #0ae;
+	color: #FFFFFF;
+}
+/*分页*/
+.pagination{
+	float: right;
+}
+.pagination li a{
+    margin: 0 5px;
+}
+.pagination li:last-child a{
+	margin-right: 0;
+}
+/*编辑门店*/
+.width150{
+	width: 150px;
+    height: 28px;
+    line-height: 28px;
+    padding-left: 3px;
+}
+.editModal{
+	padding: 10px;
+}
+.editModal .row{
+	margin-top: 10px;
+}
+.editModal .row>div:nth-child(1),.editModal .row>div:nth-child(3){
+	line-height: 28px;	
+}
+.editModal .row>div:nth-child(2),.editModal .row>div:nth-child(4){
+	padding-left: 0px;
+    padding-right: 0px;
+}
+.mgl-60{
+	margin-left: -60px;
+}
+.mgl-45{
+	margin-left: -45px;
+}
+.mgl-15{
+	margin-left: -15px;
+}
+.mgl-75{
+	margin-left: -75px;
+}
+.mgl-30{
+	margin-left: -30px;
+}
+.btn-concel{
+	padding: 4px 18px;
+}
+.btn-save{
+	padding: 4px 18px;
+    background: #00afd4;
+    color: #fff;
+    border: 1px solid #00afd4;
+    margin-left: 10px;
+}
+.bg-f4{
+	background: #F4F4F4;
+}
+.pos-relative {
+    position: relative;
+}
+.pronum-seach {
+    position: absolute;
+    top: 28px;
+    left: 0;
+    width: 150px;
+    background: #FFFFFF;
+    padding-left: 5px;
+    border: 1px solid #DDDDDD;
+    border-top: none;
+    max-height: 140px;
+    overflow-y: auto;
+    z-index: 12;
+}
+.pronum-seach p{
+	cursor: pointer;
+}

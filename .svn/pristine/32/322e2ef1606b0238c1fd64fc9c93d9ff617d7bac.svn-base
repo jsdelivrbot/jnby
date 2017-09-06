@@ -1,0 +1,826 @@
+<template>
+	<div class="container-fluid">
+		<div class="page_top">
+			<h3>配置{{userType}}提成规则</h3>
+			<p>{{userTip}}</p>
+		</div>
+			<!--<div class="alert alert-danger" v-show="returnMess.show" v-bind:class="{'alert-softsuccess':returnMess.isSuccess==true,'alert-softdanger':returnMess.isSuccess==false}" role="alert">
+		<span v-for="(n, index) in unConfig" v-if="unConfig.length>0">{{n.areaName}}、</span>
+			{{returnMess.content}}
+		</div>-->
+		
+		<!--<form class="form-horizontal">
+			<div class="form-group">
+				<label class="col-sm-1 control-label">选择大区</label>
+				<div class="col-sm-3 pl0">
+					<select class="form-control" v-model="param.areaId" @change="getStoreLevel()">
+						<option disabled value="" selected="selected">请选择</option>
+						<option :value="area.areaId" v-for="area in areas">{{area.areaName}}</option>
+					</select>
+				</div>
+			</div>
+		</form>-->
+		<div class="config_nav">
+			<div class="config_box" v-if="isShow">
+				<p>					
+					<span class="step-flag">Step1</span>
+					<span>按年销售额设置门店等级，销售额越高，等级越高</span>
+					<a href="javascript:;" class="line_btn" v-show="editFlag1==false" @click="editStoreLevel">编辑</a>
+				</p>
+				<div class="config_right" v-show="levelInfo==true">
+					<table class="table table-bordered normall-table" id="levelTable">
+						<tr>
+							<th width="15%">序号</th>
+							<th width="35%">级别</th>
+							<th>排名数</th>
+							<th>操作</th>
+						</tr>
+						<tr v-if="storeLevel!=''" v-for="(item,index) in storeLevel">
+							<td>{{index+1}}</td>
+							<td class="am-ft-left pl25">
+								<div class="inline">
+									<input type="number" min="0" v-model="item.level.salesMin" @change="isChangeLevel(item.level.salesMin)"/>
+									<span>&nbsp;万元--</span>
+								</div>
+								<div class="inline">
+									<input type="number" min="0"  v-model="item.level.salesMax" @change="isChangeLevel(item.level.salesMax)"/>
+									<span>&nbsp;万元</span>
+								</div>
+							</td>
+							<td>
+								<input type="number" min="0" v-model="item.rankCount" @change="isChangeLevel(item.rankCount)"/>
+							</td>
+							<td  v-if="index!=0">
+								<a v-if="coefParam.ruleType!=1" href="javascript:;" @click="delStoreLevel(level.levelId,index)">删除</a>
+								<a v-else href="javascript:;" @click="delStoreLevel(item.levelId,index)">删除</a>
+							</td>
+						</tr>
+						<tr>
+							<td colspan="4" class="am-ft-left">
+								<a class="mgl15" href="javascript:;" @click="addStoreLevel">＋添加级别</a>
+							</td>
+						</tr>
+					</table>
+					<button v-show="editFlag1==true" type="button" class="btn btn-default" @click="cancelStoreLevel">取消</button>
+					<button v-show="editFlag1==true" type="button" class="btn btn-primary" @click="saveStoreLevel(coefParam.ruleType)">保存</button>
+				</div>
+			</div>
+			<!--普通店员-->
+			<div class="config_box" v-if="isShow">
+				<p>					
+					<span class="step-flag">Step2</span>
+					<span>配置提成规则</span>
+					<a href="javascript:;" class="line_btn" v-show="storeLevel!=''&& editFlag2==true && isShow2 ==true" @click="editConfigure">编辑</a>
+				</p>
+				<div class="config_right" v-if="isShow2" >
+					<div class="col-sm-10 right_tab pl0">
+						<!--一级门店-->
+						<table class="table table-bordered normall-table" v-for="(value,item) in salesmanCoefficients[0]">
+							<tr>
+								<th width="20%">级别</th>
+								<th>业绩排行</th>
+								<th>员工提成系数</th>
+							</tr>
+							<tr v-for="(val,i) in value.royaltyRuleList">
+								<td class="store_level">
+									<p>{{val.level.levelName}}</p>
+									<p></p>   
+								</td>
+								<td>{{val.rank}}</td>
+								<td>
+									<input type="number" min="0" name="" v-model="val.ratio" v-bind:disabled="canEdit" @change="isChangeRatio(val)"/>&nbsp;%
+								</td>  
+							</tr>
+						</table>
+						<button v-show="editFlag2==false" type="button" class="btn btn-default" @click="cancelConfigure">取消</button>
+						<button v-show="editFlag2==false" type="button" class="btn btn-primary" @click="saveConfigure">保存</button>
+					</div>
+				</div>
+				<div class="clearfix"></div>				
+			</div>
+			<!--店长、销售主管-->
+			<div class="config_box" v-if="isShow==false">
+				<div class="config_right">
+					<div class="col-sm-10 pl0">
+						<!--一级门店-->
+						<table class="table table-bordered normall-table">
+							<tr>
+								<th width="40%">月等级</th>
+								<th>{{userType}}提成系数</th>
+								<th>操作</th>
+							</tr>		
+							<tr v-for="(level, index) in coefficients">
+								<td class="am-ft-left pl25">
+									<div style="display:inline-block">
+										<input type="number" min="0" v-model="level.level.salesMin"/>
+										<span>&nbsp;万元--</span>
+									</div>
+									<div style="display:inline-block">
+										<input type="number" min="0" v-model="level.level.salesMax"/>
+										<span>&nbsp;万元</span>
+									</div>
+								</td>
+								<td>
+									<input type="number" min="0" name="" v-model="level.ratio" v-bind:disabled="canEdit" />&nbsp;%
+								</td>
+								<td v-if="index!=0"><a href="javascript:;" @click="delStoreLevel(level.level.levelId,index,true)">删除</a></td>
+								<td v-else>-- --</td>
+							</tr>							
+							<tr>
+								<td colspan="4" class="am-ft-left">
+									<a class="mgl15" href="javascript:;" @click="addcoefficient">＋添加级别</a>
+								</td>
+							</tr>
+						</table>
+						<button type="button" class="btn btn-primary" @click="saveStoreLevel">保存</button>
+					</div>
+				</div>
+			</div>
+			<div class="clearfix"></div>
+		</div>
+		<div class="alert alert_min alert-danger alert-dismissible" role="alert" v-show="returnMess.show">
+		  <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+		  {{returnMess.content}}
+		</div>		
+		<!--模态框2-->
+		<div class="modal fade bs-example-modal-sm" v-bind:class="{'showDialog':isfade.isfade}" tabindex="-1" role="dialog" id="myModal1">
+		  <div class="modal-dialog modal-sm" role="document">
+		    <div class="modal-content">
+		      <div class="modal-body">
+		        <p class="am-ft-16">{{isfade.fadeContent}}</p>
+		      </div>
+		      <div class="modal-footer">
+		        <button type="button" class="btn btn-default" data-dismiss="modal" @click="hideDialog">{{isfade.fadeFalse}}</button>
+		        <button type="button" class="btn btn-primary" @click="resSave(isfade.fadeType)">{{isfade.fadeTrue}}</button>
+		      </div>
+		    </div>
+		  </div>
+		</div>
+	</div>
+</template>
+
+<script>
+	export default {
+		name: '',
+		data () {
+		  	return {
+				ChangeRatio:false,
+				ChangeLevel:false,
+				userType: '', //角色类型
+				userTip: '',
+				isShow: false,
+				isShow2: false,
+				areas: [],
+				param: { //查询门店等级入参
+					areaId: this.$route.query.id,
+					levelType: ' '	//等级类型
+	            },	            
+	            innitLevelsLen: '',
+	            storeLevel: [],
+	            lastindex: '', //序号
+	            canEdit: true, //提成配置input
+	            editFlag1: true, //门店等级编辑保存
+	            editFlag2: true, //提成配置编辑保存
+	            levelInfo: true, //门店等级table
+	            unConfig: [], //未配置完成区域
+				minMaxId:[],
+	            newLevel: {
+	            	salesFirstMin: '',
+	            	salesFirstMax: '',
+	            	salesEndMin: '',
+	            	salesEndMax: '',
+	            	maxRankCount: '',
+	            	maxRatio: '',
+	            	minRatio: '',
+	            	minRankCount: ''
+	            },
+	            addParam:[],
+	            coefParam: { //提成系数入参
+	            	areaId: this.$route.query.id,
+	            	ruleType: ''
+	            },
+	            coefficients: [],
+				salesmanCoefficients:[],
+				isfade:{
+					isfade:false,
+					fadeContent:'',
+					fadeTrue:'',
+					fadeFalse:'',
+					fadeType:null
+				},
+				returnMess:{
+					show:false,
+					isSuccess:true,
+					content:''
+				}
+			}
+		},
+		created: function(){
+			this.getUserType(),
+			this.getCoefficient(),
+			this.getStoreLevel()
+			var that=this
+			setTimeout(function(){
+				if(that.storeLevel[0].level.salesMax!=''&&that.storeLevel[0].level.salesMin!=''){
+					if(that.$route.query.num=='1'){
+						that.isShow = true
+						that.isShow2 = false
+						that.getAllRoyaltyRuleList()
+					}else if(that.$route.query.num=='2'){
+						that.isShow = true
+						that.canEdit= true
+					}					
+				}
+			},100)
+		}, 
+		watch: {
+			'$route' (to, from){
+		        this.getUserType(this.$route.query)
+		    }
+		},
+		methods: {
+			isChangeLevel(val){			
+				if(val<=0){
+					this.showAjaxType(false,'级别与排名数必须为正整数!')
+				}
+				this.ChangeLevel=true
+			},
+			isChangeRatio(val){
+				if(val.ratio<=0){
+					this.showAjaxType(false,'系数必须为正整数!')
+					val.ratio=1
+				}
+				this.ChangeRatio=true
+			},
+			resSave(){
+				var that=this
+				that.isfade.isfade=false
+				if(that.isfade.fadeType==1){
+					that.saveStoreLevel(that.coefParam.ruleType)
+				}else{
+					that.saveConfigure()
+				}
+				// that.editFlag1 = false
+			},
+			showAjaxType(isSuccess,content,time=1000){
+				var that=this
+				that.ChangeLevel=false
+				that.ChangeRatio=false
+				that.returnMess.show=true
+				that.returnMess.content=content
+				that.returnMess.isSuccess=isSuccess
+				var timer=setTimeout(function(){
+					that.returnMess.show=false
+				},time)
+			},
+			getUserType() {
+				var that = this;
+				if(that.$route.query.num=='1'){
+					that.userType = '店员'
+					that.userTip = '按当月销售排名设置提成，排名越前提成越高'
+					that.isShow = true
+					that.param.levelType = 'Y'
+					that.coefParam.ruleType = '1'
+				}else if(that.$route.query.num=='2'){
+					that.userType = '店铺'
+					that.userTip = '按所管辖门店月实际销售总额为基准设置'
+					that.isShow = false
+					that.param.levelType = 'M'
+					that.coefParam.ruleType = '3'
+					that.canEdit=false
+				}
+				// else if(that.$route.query.num=='3'){
+				// 	that.userType = '销售主管'
+				// 	that.userTip = '按所管辖门店月实际销售总额为基准设置'
+				// 	that.isShow = false
+				// 	that.param.levelType = 'M'
+				// 	that.coefParam.ruleType = '2'
+				// 	that.canEdit=false
+				// }
+			},
+			//查询区域
+			getAreas(){
+				var that = this;
+				that.$axios({
+                    url: '/api/area/areaList', 
+                    method: 'post',
+                    params: {
+                    	jsonObject: {}
+                    }
+                })
+				.then(function (response) {
+			        that.areas = response.data.t
+			    })
+			      .catch(function (error) {
+			        console.info(error)
+			    })
+			},
+			//查询未配置完成的区域
+			getUnconfAreas(){
+				var that = this;
+				that.$axios({
+                    url: '/api/royaltyRule/getUncompleteList', 
+                    method: 'post',
+                    params: {
+                    	jsonObject: {}
+                    }
+                })
+				.then(function (response) {
+			        that.unConfig = response.data.t
+//			        console.info(response.data.t)
+			    })
+			      .catch(function (error) {
+			        console.info(error)
+			    })
+			},
+			//根据大区查询门店等级
+			getStoreLevel(){
+				var that = this;
+				that.$axios({
+                    url: '/api/level/getLevelList', 
+                    method: 'post',
+                    params: {
+                    	jsonObject: that.param
+                    }
+                })
+				.then(function (response) {
+					that.innitLevelsLen = response.data.t.length
+					if(that.innitLevelsLen>0){						
+						var levels =  response.data.t;
+						for(var item in levels){
+							that.storeLevel.push({
+								"salesType":levels[item].level.levelType,
+								"areaId":levels[item].level.areaId,
+								"ruleType":that.coefParam.ruleType,
+								"rankCount":levels[item].level.rankCount,
+								"level":{
+									"areaId":levels[item].level.areaId,
+									"salesMax":levels[item].level.salesMax,
+									"salesMin":levels[item].level.salesMin,
+									"levelType":levels[item].level.levelType
+								}
+							})
+						}
+					}else{
+						that.storeLevel=[{
+							"salesType":that.param.levelType,
+							"areaId":that.$route.query.id,
+							"ruleType":that.coefParam.ruleType,
+							"rankCount":null,
+							"level":{
+								"areaId":that.$route.query.id,
+								"salesMax":null,
+								"salesMin":null,
+								"levelType":that.param.levelType
+							}
+						}]
+					}
+//					console.info(response.data.t)
+			    })
+			      .catch(function (error) {
+			        console.info(error)
+			    })
+			},
+			//递归判断数值溢出
+			minMaxReturn(list,i){
+				var that = this
+				if(list[i]){
+					if(list.length>2){
+						if(Number(list[i].level.salesMin)>Number(list[i].level.salesMax)){
+							return false
+						}else{
+							if(list[i+1]){
+								if(Number(list[i].level.salesMax)>Number(list[i+1].level.salesMin)){
+									return false
+								}else{
+									if(list[i].level.salesMin!=''&&list[i].level.salesMax!=''&&list[i].ratio!=null&&list[i+1].level.salesMin!=''&&list[i+1].level.salesMax!=''&&list[i+1].ratio!=null&&list[i+1].ratio!=''){
+										return that.minMaxReturn(list,i+1)
+									}else{
+										console.log('1')
+										return false
+									}
+								}
+							}else{
+								if(Number(list[i].level.salesMax)){
+									if(list[i].level.salesMin!=''&&list[i].level.salesMax!=''&&list[i].ratio!=null&&list[i-1].level.salesMin!=''&&list[i-1].level.salesMax!=''&&list[i-1].ratio!=null&&list[i-1].ratio!=''){
+										return true		
+									}else{
+									}
+								}
+							}
+						}
+					}else{
+						if(list[i].level.salesMin!=''&&list[i].level.salesMax!=''&&(list[i].ratio!=null||list[i].rankCount!=null)&&list[i+1].level.salesMin!=''&&list[i+1].level.salesMax!=''&&(list[i+1].ratio!=null||list[i+1].rankCount!=null)){
+						}else{
+							return false
+						}
+						if(Number(list[i].level.salesMax)>Number(list[i+1].level.salesMin)||(list[i].level.salesMax==''||list[i].level.ratio==''||list[i+1].level.salesMin==''||list[i+1].level.ratio=='')){
+							return false
+						}else{
+							return true
+						}
+					}
+				}else{
+					return that.minMaxReturn(list,i+1)
+				}
+			},
+			//保存门店等级
+			saveStoreLevel(type){
+				var that = this;
+				if(type!=1){
+					that.addRoyaltyRuleList(JSON.stringify(that.coefficients))
+				}else{
+					var sendArr = that.storeLevel
+					for(var item in sendArr){
+						delete sendArr[item].ratio
+						delete sendArr[item].rank
+						delete sendArr[item].ruleId
+						delete sendArr[item].ruleName
+					}
+					that.addRoyaltyRuleList(JSON.stringify(sendArr))
+					that.isShow2=true
+				}
+				that.canEdit = false
+			},
+			// 非空判断
+			nonull(obj){
+				if(obj!=''){
+					for(var item in obj){
+						var ist1=obj[item].level.salesMax!=""&&obj[item].level.salesMax!=null&&obj[item].level.salesMax>=0
+						var ist2=obj[item].level.salesMin!=""&&obj[item].level.salesMin!=null&&obj[item].level.salesMin>=0
+						var ist3=((obj[item].level.rankCount!=""&&obj[item].level.rankCount!=null&&obj[item].level.rankCount>=0)||(obj[item].ratio!=""&&obj[item].ratio!=null&&obj[item].ratio>=0))
+						if(ist1&&ist2&&ist3){
+							return true
+						}else{
+							return false
+						}
+					}
+				}else{
+					return false
+				}
+			},
+			//添加等级公共ajax
+			addRoyaltyRuleList(obj){
+				var that = this
+				var ist = this.nonull(JSON.parse(obj))
+				if(ist){
+					that.editFlag1 = false
+					that.levelInfo = false
+					that.isfade.isfade=false
+					that.$axios({
+						url: '/api/royaltyRule/addRoyaltyRuleList', 
+						method: 'post',
+						params: {
+							jsonObject: obj
+						}
+					})
+					.then(function (response) {
+						that.showAjaxType(response.status==200?true:false,response.status==200?'新增成功':response.data.text)
+						that.getAllRoyaltyRuleList()
+					})
+					.catch(function (error) {
+						console.info(error)
+					})	
+				}else{
+					that.showAjaxType(false,'等级与系数不能为空且不能为负数',2000)
+				}
+			},
+			//编辑门店等级
+			editStoreLevel(){
+				var that = this;
+				if(that.ChangeRatio==false){
+					that.editFlag1 = true
+					that.levelInfo = true
+				}else{
+					that.isfade.isfade=true
+					that.isfade.fadeContent="配置提成规则作了修改，是否保存？"
+					that.isfade.fadeFalse="取消"
+					that.isfade.fadeTrue="保存"	
+					that.isfade.fadeType=2				
+				}
+			},
+			//编辑配置提成
+			editConfigure(){
+				var that = this;
+				if(that.ChangeLevel==false){
+					that.editFlag2 = false
+					that.canEdit = false
+					that.isShow2=true
+					that.getAllRoyaltyRuleList()
+				}else{
+					that.isfade.isfade=true
+					that.isfade.fadeContent="门店等级作了修改，是否保存？"
+					that.isfade.fadeFalse="取消"
+					that.isfade.fadeTrue="保存"
+					that.isfade.fadeType=1				
+				}
+			},
+			//保存配置提成
+			saveConfigure(){
+				var that = this;
+				that.editFlag2 = true
+				that.canEdit = true
+				//组装数据
+				var sendList=[];
+				for(var item in that.salesmanCoefficients[0]){
+					for(var val in that.salesmanCoefficients[0][item].royaltyRuleList){
+						var listObj={
+								ruleId:that.salesmanCoefficients[0][item].royaltyRuleList[val].ruleId,
+								ratio:that.salesmanCoefficients[0][item].royaltyRuleList[val].ratio
+						}
+						sendList.push(listObj)
+					}
+				}
+				that.$axios({
+					url: '/api/royaltyRule/updateRoyaltyRuleList', 
+					method: 'post',
+					params:{
+						jsonObject:JSON.stringify(sendList)
+					}
+				})
+				.then(function (response) {
+					that.showAjaxType(response.status==200?true:false,response.data.text)
+				})
+				.catch(function (error) {
+					console.info(error)
+				})	
+				that.editFlag1 = false
+				that.levelInfo = false	
+			},
+			//取消编辑
+			cancelStoreLevel(){
+				var that = this;
+				that.editFlag1 = false
+				that.levelInfo = false
+			},
+			cancelConfigure(){
+				var that = this;
+				that.editFlag2 = true
+				that.canEdit = true
+			},
+			//删除门店等级
+			/*
+			/notOne:  true : 不是店员
+			*/
+			delStoreLevel(id,index,notOne){
+				var that = this;
+				if(id == undefined ||id == ''){
+					id = ''
+					if(!notOne){
+						that.storeLevel.splice(index,1);
+					}else{
+						that.coefficients.splice(index,1);
+					}
+				}else{
+					that.$axios({
+						url: '/api/level/deleteLevel', 
+						method: 'post',
+						params: {
+							jsonObject: {levelId: id}
+						}
+					})
+					.then(function (response) {
+						that.showAjaxType(response.status==200?true:false,response.status==200?'删除成功!':response.data.text)
+						that.getStoreLevel()	
+						that.getCoefficient()				
+					})
+					.catch(function (error) {
+						console.info(error)
+					})
+				}
+			},
+			//新增门店等级
+			addcoefficient(){
+				var that = this;
+				if(that.coefficients!=''){
+					var obj={
+							"ratio": null,
+							"ruleName":'',
+							"level": {
+								"levelName": '',
+								"rankCount": null,
+								"areaId": this.$route.query.id,
+								"salesMax":null,
+								"salesMin":null,
+								"levelType":that.param.levelType
+							},
+							"salesType":that.param.levelType,
+							"areaId":this.$route.query.id,
+							"rankCount": null,
+							"rank": null,
+							"ruleType": that.coefParam.ruleType
+					}
+					that.coefficients.splice(that.coefficients.length-1, 0, obj)
+				}
+			},
+			addStoreLevel(){
+				var that = this;
+				// 判断是否需要添加首尾
+				if(that.storeLevel!=''){
+					var obj={
+						"salesType":that.param.levelType,
+						"areaId":this.$route.query.id,
+						"ruleType":that.coefParam.ruleType,
+						"rankCount":null,
+						"level":{
+							"areaId":this.$route.query.id,
+							"salesMax":null,
+							"salesMin":null,
+							"levelType":that.param.levelType
+						}
+					}
+					that.storeLevel.splice(that.storeLevel.length-1, 0, obj)
+				}
+			},
+			//查询提成系数
+			getCoefficient(){
+				var that = this;
+				that.$axios({
+                    url: '/api/royaltyRule/getRoyaltyRuleList', 
+                    method: 'post',
+                    params: {
+                    	jsonObject: that.coefParam
+                    }
+                })
+				.then(function (response) {
+			        // that.coefficients = response.data.t
+					if(that.coefParam.ruleType!=1){
+						var obj=[];
+						if(response.data.t!=''){
+							for(var item in response.data.t){
+								obj.push(response.data.t[item].royaltyRuleList[0])
+							}
+						}else{
+							obj=[{
+								"ratio": null,
+								"ruleName":'',
+								"level": {
+									"levelName": '',
+									"rankCount": null,
+									"areaId": that.$route.query.id,
+									"salesMax":null,
+									"salesMin":null,
+									"levelType":that.param.levelType
+								},
+								"salesType":that.param.levelType,
+								"areaId":that.$route.query.id,
+								"rankCount": null,
+								"rank": null,
+								"ruleType": that.coefParam.ruleType
+							}]
+						}
+						that.coefficients=obj
+					}else{
+						var obj=[];
+						if(response.data.t!=''){
+							for(var item in response.data.t){
+								obj.push(response.data.t[item].royaltyRuleList[0])
+							}
+						}else{
+							obj=[{
+								"salesType":that.param.levelType,
+								"areaId":that.$route.query.id,
+								"ruleType":that.coefParam.ruleType,
+								"rankCount":null,
+								"level":{
+									"areaId":that.$route.query.id,
+									"salesMax":null,
+									"salesMin":null,
+									"levelType":that.param.levelType
+								}
+							}]		
+						}
+						that.storeLevel=obj
+					}
+			    })
+			      .catch(function (error) {
+			        console.info(error)
+			    })
+			},
+			getAllRoyaltyRuleList(){
+				var that=this
+				that.$axios({
+                    url: '/api/royaltyRule/getAllRoyaltyRuleList', 
+                    method: 'post',
+                    params: {
+                    	jsonObject: that.coefParam
+                    }
+                })
+				.then(function (response) {
+					that.salesmanCoefficients=[]
+					for(var item in response.data.t){
+						that.salesmanCoefficients.push(response.data.t[item].levelList)
+					}
+					console.log(that.salesmanCoefficients)
+			    })
+			      .catch(function (error) {
+			        console.info(error)
+			    })				
+			},
+			hideDialog(){
+				this.editFlag2 = true
+				this.isfade={
+					isfade:false,
+					fadeContent:'',
+					fadeTrue:'',
+					fadeFalse:''
+				}
+			}
+		},
+		beforeMount() {
+			var that=this
+			setTimeout(function(){
+				if(that.storeLevel==''){
+					that.isShow2 = false
+				}else{
+					that.isShow2 = true
+				}
+			},100)
+		},
+	}
+</script>
+
+<style scoped>
+	.modal-dialog {
+		margin: 300px auto !important;
+	}
+	.showDialog{
+		display:block;
+		opacity:1;
+	}
+	.inline{
+		display:inline;
+	}
+	.config_nav{
+		width: 100%;
+		position: relative;
+	}
+	.config_box{
+		width: 100%;
+		position: relative;
+		margin-bottom: 15px;
+		box-sizing: border-box;
+	}
+	.config_box:after{
+		content: '';
+		position: absolute;
+		left: 20px;
+		top: 7%;
+		width: 1px;
+		height: 94%;
+		border-left: 1px dashed #DDDDDD;
+		z-index: 0;
+	}
+	.config_nav .config_box:last-child:after{
+		border: 0;
+	}
+	.config_box span.step-flag{
+	    display: inline-block;
+	    padding: 5px;
+	    width: 40px;
+	    height: 40px;
+	    box-sizing: border-box;
+	    background: #38b179;
+	    color: #fff;
+	    border-radius: 50%;
+	    line-height: 32px;
+	    font-size: 12px;
+	    margin-right: 20px;
+        z-index: 1;
+    	position: relative;
+	}
+	.config_box .config_right{
+		margin-left: 65px;
+		margin-bottom: 15px;
+	}
+	table tr{
+	    border-bottom: 1px solid #f4f4f4;
+	}
+	table tr td input{
+		text-align: center;
+		max-width: 100px;
+	    border-radius: 2px;
+    	border: 1px solid #dddddd;
+	    line-height: 24px
+	}
+	table tr td input:disabled{
+		background: none;
+    	border: 0 !important;
+	}
+	.line_btn{
+		border: 1px solid;
+	    padding: 3px 8px;
+	    border-radius: 3px;
+	    font-size: 12px;
+	    margin-left: 10px;
+	}
+	.config_right button{
+	    padding: 5px 23px;
+	}
+	.right_tab table tr th:first-child{
+		background: #EEEEEE;
+	}
+	table tr .store_level{
+		background: #EEEEEE;
+	}
+</style>

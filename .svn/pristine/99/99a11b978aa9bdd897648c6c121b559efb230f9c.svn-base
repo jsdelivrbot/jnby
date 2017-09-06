@@ -1,0 +1,305 @@
+<template>
+	<div class="indexMgt-wrapper">
+		<div class="col-md-12 indexMgt-nav">
+			<select class="col-md-2 mgr15" v-model='areaId' @change="getStores(areaId)">
+				<option disabled value=''  selected="selected">请选择</option>
+				<option :value="area.areaId" v-for="area in areas">{{area.areaName}}</option>
+			</select>
+			<select class="col-md-2"  v-model='storeNum'  @change="getStoreCountList(storeNum)">
+				<option disabled value='' selected="selected">请选择</option>
+				<option :value="store.storeNum" v-for="store in stores" v-if='areaId!=""'>{{store.storeName}}</option>
+			</select>
+			<span class="am-ft-orange mgl20 mgt5 fn-left fn-block">请选择大区和门店进行查询</span>
+		</div>
+		<div class="col-md-8 pd10 mgl20">
+			<div class="col-md-4">
+				<p class="mgb0 am-ft-14">本月总销售</p>
+				<p class="am-ft-black" v-if="monthTotal.salesCount!=undefined && monthTotal.salesCount!=''">
+					<span class="am-ft-14">￥</span>
+					<span class="am-ft-24 am-ft-orange">{{monthTotal.salesCount}}</span>
+					<span class="am-ft-14">/{{monthTotal.num}}单</span>
+				</p>
+				<p class="am-ft-gray6" v-show="len==0">暂无数据</p>
+			</div>
+			<div class="col-md-4">
+				<p class="mgb0 am-ft-14">本月总提成</p>
+				<p class="am-ft-black" v-if="monthTotal.salesCount!=undefined && monthTotal.salesCount!=''">
+					<span class="am-ft-14">￥</span>
+					<span class="am-ft-24 am-ft-orange">{{monthTotal.salary.toFixed(2)}}</span>
+				</p>
+				<p class="am-ft-gray6" v-show="len==0">暂无数据</p>
+			</div>
+		</div>
+		<div class="col-md-8 pd10 mgl20">
+			<div class="col-md-12">
+				<div id="myChart" :style="{width: '600px', height: '300px'}"></div>
+			</div>
+		</div>
+		<div class="col-md-9 pd10 mgl20">
+			<p>本月销售排行</p>
+			<!--row1-->
+			<div class="col-md-12 charsRanks">
+				<div class="col-md-2 am-ft-center " v-for='sale in salesCount'>
+					<div class="index-rank">{{sale.salesRank}}</div>
+					<p class="am-ft-16">{{sale.employeeName}}</p>
+					<p class="mgb0  am-ft-12">销售额</p>
+					<p>
+						<span class="am-ft-14">￥</span>
+						<span class="am-ft-22">{{sale.salesCount}}</span>
+					</p>
+				</div>
+			</div>
+		</div>
+	</div>
+</template>
+<script>
+// 引入基本模板
+let echarts = require('echarts/lib/echarts')
+// 引入折线图组件
+require('echarts/lib/chart/line')
+// 引入提示框和title组件
+require('echarts/lib/component/tooltip')
+require('echarts/lib/component/title')
+	export default {
+		name: '',
+		data() {
+			return {
+				areas: [],
+				areaId:'',
+				storeNum:'',
+				stores:[],
+				daySalesCount:[],//店月销售排行
+				salesCount:[],//店员销售排行
+				dataX:[],
+				dataY:[],
+				year:'',
+				month:'',
+				monthTotal:[],//店铺总业绩
+				len: ''
+			}
+		},
+		created: function(){
+			this.getAreas()
+			var date = new Date();
+		     this.year = date.getFullYear();
+	    	 this.month = date.getMonth()+1;
+		}, 
+		  methods: {
+		  	//查询区域
+			getAreas(){
+				var that = this;
+				that.$axios({
+                    url: 'http://dvtest.qineasy.com:8888/area/areaList', 
+                    method: 'post',
+                    params: {
+                    	jsonObject: {}
+                    }
+                })
+				.then(function (response) {
+			        that.areas = response.data.t
+			    })
+			      .catch(function (error) {
+			        console.info(error)
+			    })
+			},
+			//查询门店
+			getStores(areaId){
+				var that = this;
+				if(areaId){
+					that.$axios({
+	                    url: 'http://dvtest.qineasy.com:8888/store/getStoreList',
+	                    method: 'post',
+	                    params: {
+	                    	jsonObject: {
+	                    		areaId:areaId
+	                    	}
+	                    }
+	                })
+					.then(function (response) {
+				        that.stores = response.data.t.storeList
+//				         console.log(that.stores)
+				    })
+				      .catch(function (error) {
+				        console.info(error)
+				    })
+			     }
+			},
+			 //查询店铺店员销售排行
+			getSalesCountList(){
+				var that = this;
+				that.$axios({
+                    url: 'http://dvtest.qineasy.com:8888/salesCount/getAllSalesCountList', 
+                    method: 'post',
+                    params: {
+                    	jsonObject: {
+                    		storeId:that.storeNum,
+                    		monthTime:that.month,
+                    		yearTime:that.year
+                    		}
+                    }
+                })
+				.then(function (response) {
+			        that.salesCount = response.data.t
+			    })
+			      .catch(function (error) {
+			        console.info(error)
+			    })
+			},
+			//查询业绩提成
+			getMonthStore(){
+				var that = this;
+					that.$axios({
+	                    url: 'http://dvtest.qineasy.com:8888/salesCount/getMonthStoreCountList', 
+	                    method: 'post',
+	                    params: {
+	                    	jsonObject: {
+//	                    		storeId:'1DA00104',
+	                    		storeId:that.storeNum,
+	                    		monthTime:that.month,
+	                    		yearTime:that.year
+	                    	}
+	                    }
+	                })
+					.then(function (response) {
+						that.len = response.data.t.length;
+						if(response.data.t[0]!=''&&response.data.t[0]!=undefined){
+					       	 that.monthTotal = response.data.t[0]
+					         that.monthTotal.salary=that.monthTotal.ratio*that.monthTotal.salesCount/100
+						}
+				    })
+				      .catch(function (error) {
+				        console.info(error)
+				    })
+			},
+			 //查询店铺销售
+			getStoreCountList(storeId){
+				var that = this;
+				if(storeId){
+				that.$axios({
+                    url: 'http://dvtest.qineasy.com:8888/salesCount/getStoreCountList', 
+                    method: 'post',
+                    params: {
+                    	jsonObject: {
+                    		storeId:that.storeNum,
+                    		monthTime:that.month,
+                    		yearTime:that.year
+                    		}
+                    }
+                })
+				.then(function (response) {
+			        that.daySalesCount = response.data.t
+					that.dataX=[];
+					that.dataY=[];
+			        for(var item in that.daySalesCount){
+			        	that.dataX.push(that.daySalesCount[item].day+'日');
+			        	that.dataY.push(that.daySalesCount[item].salesCount);
+			        }
+			         that.getSalesCountList();
+			         that.getMonthStore();
+		   			 that.drawLine(that.dataX,that.dataY);
+			    })
+			      .catch(function (error) {
+			        console.info(error)
+			    })
+			    }  
+			},
+			//获取时间
+		  	mGetDate(){
+			     var date = new Date();
+			     this.year = date.getFullYear();
+		    	 this.month = date.getMonth()+1;
+			     var day= new Date(year, month, 0);
+			     var dateInit={
+			     	month:month,
+			     	day:day.getDate()
+			     }
+			     return dateInit;
+			},
+		    drawLine(dataX,dataY){
+		        // 基于准备好的dom，初始化echarts实例
+		        let myChart = this.$echarts.init(document.getElementById('myChart'));
+		        // 绘制图表
+		        myChart.setOption({
+		            title: { text:this.month+ '月销售走势图' },
+		             tooltip: {
+				        trigger: 'none',
+				        axisPointer: {
+				            type: 'cross'
+				        }
+				    },
+		            xAxis: {
+		                data: dataX,
+//		                 axisPointer: {
+//		                 label: {
+//		                    formatter: function (params) {
+//		                        return '￥' + (params.seriesData.length ?params.seriesData[0].data : '');
+//			                    }
+//			                }
+//			            },
+		                axisLabel:{
+			                 interval:2 //0：表示全部显示不间隔；auto:表示自动根据刻度个数和宽度自动设置间隔个数
+            			}
+		            },
+		            yAxis: {
+		            	 name: '销售额(元)',
+//		            	show:false,  
+		            	 splitLine:{  
+				                        　　　　show:false  
+				                        　　}  
+		            },
+		            series: [{
+//		            	itemStyle:{
+//		            		normal: {
+//		            			label : {show: true}
+//		            			}
+//		            		},
+		                name: '销量',
+		                type: 'line',
+		                data: dataY
+		            }]
+		        });
+		    }
+  		}
+	}
+
+</script>
+<style>
+	.indexMgt-nav{
+		background: #F4F4F4;
+	    padding: 15px 30px;
+	    margin-bottom: 15px;
+	}
+	.indexMgt-nav>select{
+		height: 30px;
+	}
+	.charsRanks>div{
+		border: 1px solid #ddd;
+		margin-left: 5px;
+		margin-right: 5px;
+		padding: 20px 0;
+	}
+	.charsRanks{
+		padding: 0;
+		margin-bottom: 10px;
+	}
+	.charsRanks>div:first-child{
+		margin-left:0;
+	}
+	.charsRanks>div:last-child{
+		margin-right:0;
+	}
+	.border-dd{
+		border: 1px solid #DDDDDD;
+	}
+	.index-rank{
+		 background: #FF6600;
+	    border-radius: 50%;
+	    width: 30px;
+	    color: #fff;
+	    height: 30px;
+	    text-align: center;
+	    line-height: 30px;
+	    font-size: 20px;
+	    margin: 5px auto;
+	}
+</style>

@@ -1,0 +1,272 @@
+<template>
+	<div class="inquiry-wrapper">
+		<div class="inquiry-top container-fluid">
+			<div class="row mgb10">
+				<div class="col-md-3 fn-left">
+					<label>工号：</label>
+					<input type="text" v-model="param.jobCode" />
+				</div>
+				<div class="col-md-3 fn-left">
+					<label>姓名：</label>
+					<input type="text" v-model="param.name" />
+				</div>	
+				<div class="col-md-3 fn-left">
+					<label>大区：</label>
+					<select v-model="param.storeArea">
+						<option value="" selected="selected">不限</option>
+						<option v-for="area in areas" :value="area.areaName">{{area.areaName}}</option>
+					</select>
+				</div>
+				<!--<div class="fn-left mgl10">
+					<label>城市：</label>
+					<select v-model="param.storeCity">
+						<option value="" selected="selected">不限</option>
+						<option></option>
+					</select>
+				</div>
+				-->
+				<div class="col-md-3 fn-left">
+					<label>绩效时间：</label>
+					<input type="month" v-model="time" />
+				</div>
+				<div class="fn-left mgl10">
+					<button type="button" class="btn btn-primary" @click="refresh">查询</button>
+				</div>
+			</div>
+		</div>
+		<div class="col-md-12">
+			<div class="col-md-12 pb10">
+				<span class="fn-left mgt5">查询结果（{{counts}}）</span>
+				<button class="btn btn-primary fn-right" @click="exportList">导出数据</button>
+				<button class="btn btn-primary fn-right mgr10" type="button" @click="download">模板下载</button>
+				<form id="formid">
+					<button class="btn btn-primary fn-right mgr10" type="button">导入数据</button>
+					<input class="btn fn-right mgr10 opacityHide" type="file" id="resource" name="resource" ref="resource" @change="upload()">
+				</form>
+				<!--<a class="btn btn-primary fn-right" href="http://10.0.17.212/citymanager/exportManagerSalary?jsonObject={'type':1}">导出数据</a>-->
+				<!--<router-link class="btn btn-primary fn-right" :to="{path: dataurl, query: {jsonObject: JSON.stringify(param)}}" tag="a">导出数据</router-link>-->
+			</div>
+			<div class="col-md-12">
+				<table class="table table-bordered normall-table table-hover">
+				    <tr>
+				      <th>绩效期间</th>
+				      <th>工号</th>
+				      <th>姓名</th>
+				      <th>月销售额</th>
+				      <th>月指标额</th>
+				      <th>完成率</th>
+				      <th>提成</th>
+				      <th>奖金</th>
+				      <th>操作</th>
+				    </tr>
+					<tr v-for="list,index in lists">
+						<td>{{list.year}}-{{list.month}}</td>
+						<td>{{list.jobCode}}</td>
+						<td>{{list.name}}</td>
+						<td>{{list.storeSales}}</td>
+						<td>{{list.storeTarget}}</td>
+						<td>{{list.completeRatio}}</td>
+						<td>{{list.hundred}}</td>
+						<td>{{list.salary}}</td>
+						<td>
+							<router-link :to="{name:'CsdqGuideDetail',query: list}" class='urlStyle' tag="a">查看详情</router-link>
+						</td>
+					</tr>
+				</table>
+				<!--分页-->
+				<div v-show='counts>0'>
+					<button class="btn btn-default fn-left" @click="refresh">刷新</button>
+					<boot-page ref="page" :async="true" :data="lists" :len="10" :url="url" :page-len="pageLen" :param="param" v-on:listenToChildEvent="showMsgFormChild"></boot-page>								
+				</div>
+				<!--/分页-->	
+								
+			</div>
+		</div>
+	</div>
+</template>
+<style>
+	.urlStyle{
+		color: #0ae;
+	    border: 1px solid;
+	    border-radius: 4px;
+	    padding: 3px 10px
+	}
+	.table tbody tr td{
+		vertical-align:middle;
+	}
+	.opacityHide{
+		opacity: 0;
+	}
+	#formid{
+		position:relative;
+		overflow:hidden;
+	}
+	#formid input{
+		position:absolute;
+		right:0;
+		top:0;
+	}
+</style>
+<script>
+import bootPage from '../pagination.vue'
+	export default {
+		name: '',
+		data() {
+			return {
+				counts: '',
+				lenArr: [10], // 每页显示长度设置
+	            pageLen: 10, // 可显示的分页数
+	            url: 'http://dvtest.qineasy.com:8888/citymanager/getManagerList', // 请求路径
+				param: {
+				 	jobCode:'',
+				 	name:'',
+				 	storeArea:'',
+				 	storeCity:'',
+				 	year: '',
+				 	month: '',
+					type:'2',
+					nub: '0',
+					size: '5'
+	            }, // 传递参数	            
+				time:'',
+				areas:[],     
+	            stores:[],
+	            lists: [], // 分页组件传回的分页后数据 
+				dateObj: null,
+	            dataurl: 'http://dvtest.qineasy.com:8888/citymanager/exportManagerList' // 导出数据地址
+			}
+		},
+		created(){
+			this.$nextTick(() => {
+	       	 this.refresh()	        
+	      	})	
+			this.getStores()
+			this.getAreas()
+			this.getdate()
+			this.time=this.getdate().year+'-'+this.getdate().month
+		},
+		components: {
+	        bootPage
+	  	},
+		methods: {
+			upload(){
+				var formData = new FormData() // FormData 对象
+				formData.append('file', this.$refs.resource.files[0])
+				formData.append('jsonObject', JSON.stringify({type:2}))
+				this.$http.post('http://dvtest.qineasy.com:8888/citymanager/batchImport', formData, {
+					method: 'post',
+					headers: {
+						'Content-Type': 'multipart/form-data'
+					},
+					transformRequest: [function (data) {
+						return data
+					}],
+					onUploadProgress: function(e) {
+						let percentage = Math.round((e.loaded * 100) / e.total) || 0
+						console.log(e, percentage)
+					}
+				}).then((response) => {
+					if (response.data.status) {
+						setTimeout(function(){
+							location.reload();
+						},500)						
+					} else {
+						this.$Notice.error({
+							title: '错误',
+							message: response.data.imgId
+						})
+					}
+				}).catch(function (error) {
+					console.log(error)
+				})				
+			},	
+			getdate (){
+				let obj;
+				var data = new Date();
+				let month = data.getMonth()+1;
+				let year = data.getFullYear();
+				if(month<10){
+					month = '0'+ month
+				}else{
+					month = month
+				}
+				obj = {
+					year: year,
+					month: month
+				}
+				return obj
+			},
+			refresh () {
+				var time= this.time
+				var a = time.split('-')
+				this.param.year=a[0]
+				if(a[1]<10){
+					a[1] = a[1].split('0')[1]
+				}
+				this.param.month=a[1]
+           		var that = this;
+	            that.$refs.page.refresh()
+	        },
+	        showMsgFormChild: function(data){
+				if(data!=''&&data!=null){
+	            	this.lists = data.list;
+					this.counts = data.count;
+				}else{
+	            	this.lists = [];
+					this.counts = 0;					
+				}
+			},
+			//查询门店
+			getStores(){
+				var that = this;
+				that.$axios({
+                    url: 'http://dvtest.qineasy.com:8888/store/getStoreList', 
+                    method: 'get',
+                    params: {
+                    	jsonObject: {}
+                    }
+                })
+				.then(function (response) {
+			        that.stores = response.data.t.storeList
+			    })
+			      .catch(function (error) {
+			        console.info(error)
+			    })
+			},
+			//导出数据
+			exportList(){
+				var that = this;
+				window.open(that.dataurl+'?jsonObject='+JSON.stringify(that.param));
+			},
+			//下载模板
+			download(){
+				var that = this;
+				window.open('http://dvtest.qineasy.com:8888/citymanager/gettManagerListTemplate?jsonObject='+JSON.stringify(that.param));
+			},
+			//查询区域
+			getAreas(){
+				var that = this;
+				that.$axios({
+                    url: 'http://dvtest.qineasy.com:8888/area/areaList', 
+                    method: 'post',
+                    params: {
+                    	jsonObject: {}
+                    }
+                })
+				.then(function (response) {
+//					console.info(response)
+			        that.areas = response.data.t
+			    })
+			      .catch(function (error) {
+			        console.info(error)
+			    })
+			}
+		},	
+		events: {
+	        // 刷新数据
+	        'refresh' () {
+	            this.refresh()
+	        }
+	    }
+	}
+</script>

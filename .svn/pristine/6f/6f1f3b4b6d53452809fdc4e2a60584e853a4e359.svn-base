@@ -1,0 +1,308 @@
+<!-- 表格分页组件 -->
+<template>
+	<div>
+	    <nav class="boot-nav">
+	    	<div class="page-total fn-right">
+				共 <span v-text="cpPageTotal"></span> 页
+	        </div>
+	        <ul class="pagination boot-page">
+	            <li>
+	                <a href="javascript:void(0)" aria-label="Previous" @click="onFirstClick()">
+	                    <span aria-hidden="true">首页</span>
+	                </a>
+	            </li>
+	            <li>
+	                <a href="javascript:void(0)" aria-label="Next" @click="onPrevClick()">
+	                    <span aria-hidden="true">上一页</span>
+	                </a>
+	            </li>
+	            <li v-for="(page,index) in cpPages" :class="activeNum === index ? 'active' : ''">
+	                <a href="javascript:void(0)" v-text="page" @click="onPageClick(index)"></a>
+	            </li>
+	            <li>
+	                <a href="javascript:void(0)" aria-label="Next" @click="onNextClick()">
+	                    <span aria-hidden="true">下一页</span>
+	                </a>
+	            </li>
+	            <li>
+	                <a href="javascript:void(0)" aria-label="Next" @click="onLastClick()">
+	                    <span aria-hidden="true">尾页</span>
+	                </a>
+	            </li>
+	        </ul>	        
+	    </nav>
+	    <div class="clearfix"></div>
+    </div>
+</template>
+
+<script>
+export default {
+    props: {
+        // 页码
+        pages: {
+            type: Array,
+            default: function () {
+                return [1]
+            }
+        },
+        // 是否请求服务器端数据
+        async: {
+            type: Boolean,
+            default: true
+        },
+        // 每页显示个数
+        len: {
+            type: Number,
+            default: 10
+        },
+        // 显示个数数组
+        lens: {
+            type: Array,
+            default: function () {
+                return [5, 10, 50]
+            }
+        },
+        // 表格数据（数组）
+        data: {
+            type: Array,
+            default: function () {
+                return []
+            }
+        },
+        // 请求数据地址
+        url: {
+            type: String,
+            default: ''
+        },
+        // 显示页数
+        pageLen: {
+            type: Number,
+            default: 5
+        },
+        // 总页数 
+        pageTotal: {
+            type: Number,
+            default: 1
+        },
+        // 参数内容
+        param: {
+            type: Object,           
+            default: function () {
+                return {               	
+				   jsonObject: {}			  
+                }
+            }
+        }
+    },
+    data () {
+        return {
+            activeNum: 0,
+            cpPages: this.pages[0],
+            cpPageTotal: this.pageTotal
+        }
+    },
+    methods: {
+        // 点击页码刷新数据
+        onPageClick (index) {
+            this.activeNum = index
+        },
+        // 上一页
+        onPrevClick () {
+        	var that = this;
+            // 当前页是否为当前最小页码
+            if (that.activeNum > 0) {
+                that.activeNum = that.activeNum - 1
+            } else {
+                if (that.cpPages[0] !== 1) {
+                    let newPages = []
+                    for (let i = 0; i < that.cpPages.length; i++) {
+                        newPages[i] = that.cpPages[i] - 1
+                    }
+                    that.cpPages = newPages
+                    that.getData()
+                }
+            }
+        },
+        // 下一页
+        onNextClick () {
+        	var that = this;
+            // 当前页是否为当前最大页码
+            if (that.activeNum < that.cpPages.length - 1) {
+                that.activeNum = that.activeNum + 1
+            } else {
+                if (that.cpPages[that.cpPages.length - 1] < that.cpPageTotal) {
+                    let newPages = []
+                    for (let i = 0; i < that.cpPages.length; i++) {
+                        newPages[i] = that.cpPages[i] + 1
+                    }
+                    that.cpPages = newPages
+                    that.getData()
+                }
+            }
+        },
+        // 第一页
+        onFirstClick () {
+        	var that = this;
+            if (that.cpPages[0] === 1) {
+                that.activeNum = 0
+            } else {
+                let originPage = []
+                for (let i = 1; i <= that.pageLen; i++) {
+                    originPage.push(i)
+                }
+                that.cpPages = originPage
+                that.activeNum === 0 ? that.getData() : that.activeNum = 0
+            }
+        },
+        // 最后一页
+        onLastClick () {
+        	var that = this;
+            if (that.cpPageTotal <= that.pageLen) {
+                that.activeNum = that.cpPages.length - 1
+            } else {
+                let lastPage = []
+                for (let i = that.pageLen - 1; i >= 0; i--) {
+                    lastPage.push(that.cpPageTotal - i)
+                }
+                that.cpPages = lastPage
+                that.activeNum === that.cpPages.length - 1 ? that.getData() : that.activeNum = that.cpPages.length - 1
+            }
+        },
+        // 获取页码
+        getPages () {
+            var that = this;
+            that.cpPages = []
+            if (!that.async) {
+                that.cpPageTotal = Math.ceil(that.data.length==0?1:that.data.length / that.len)
+            }
+            // 比较总页码和显示页数
+            if (that.cpPageTotal <= that.pageLen) {
+                for (let i = 1; i <= that.cpPageTotal; i++) {
+                    that.cpPages.push(i)
+                }
+            } else {
+                for (let i = 1; i <= that.pageLen; i++) {
+                    that.cpPages.push(i)
+                }
+            }
+        },
+        // 页码变化获取数据
+        getData () {
+        	var that = this;
+            if (!this.async) {
+                let len = this.len,
+                    pageNum = this.cpPages[this.activeNum] - 1,
+                    newData = [];
+                for (let i = pageNum * len; i < (pageNum * len + len); i++) {
+                    that.data[i] !== undefined ? newData.push(this.data[i]) : ''
+                }
+                
+                this.$root.eventHub.$emit('data', newData)
+            } else {
+                if(typeof(this.cpPages[this.activeNum])==undefined||this.cpPages[this.activeNum]==null){
+                	this.param.nub = '0'
+                }else{
+                	this.param.nub = this.cpPages[this.activeNum]               	
+                }
+                this.param.size = this.len
+                this.$axios({
+                    url: this.url, 
+                    method: 'post',
+                    params: {
+                    	jsonObject: this.param
+                    }
+                })
+                .then(function (response) {
+                    if(response.data.t!=null){
+                        that.cpPageTotal = Math.ceil( typeof(response.data.t.count)==undefined||null?1:response.data.t.count / that.len)
+                        if (that.cpPages.length !== that.pageLen || that.cpPageTotal < that.pageLen) {
+                            that.getPages()
+                        }                   
+                        if (!response.data.t.count) {
+                            that.activeNum = that.cpPageTotal - 1
+                        }
+                        that.sendTopartant(response.data.t);
+                    }else{
+                        that.sendTopartant(response.data.t);
+                    }
+                })
+			      .catch(function (error) {
+			        console.info(error)
+			    })                
+                
+            }
+        },
+        sendTopartant(val){
+            this.$emit('listenToChildEvent', val)
+        },
+        // 刷新表格
+        refresh () {
+            this.getData()
+        },
+        // 重置并刷新表格
+        refresh2 () {
+            this.cpPages = [1]
+            this.activeNum === 0 ? this.getData() : this.activeNum = 0
+        }
+    },
+    ready () {
+    	var that = this;
+        if (!that.async) {
+            that.getPages()
+        }else{       	
+        	that.getData()
+        }
+    },
+    watch: {   	
+        // 监听显示数量
+        'len' (newVal, oldVal) {
+        	var that = this;
+            if (!that.async) {
+                that.getPages()
+                if (that.activeNum + 1 > that.cpPages.length) {
+                    that.activeNum = that.cpPages.length - 1
+                }
+                that.getData()
+            } else {
+                that.refresh2()
+            }
+        },
+        // 监测当前页变化
+        'activeNum' (newVal, oldVal) {
+            this.getData()
+        },
+        pages(val) {  
+            this.myResult = val;
+        }         
+    },
+    events: {
+        'refresh::page' () {
+            this.refresh()
+        }
+    }
+}
+</script>
+
+<style scoped>
+.boot-select {
+    float: right;
+    width: 40px;
+    padding: 0;
+    text-align: center;
+    margin-left: 10px;
+    box-sizing: border-box;
+}
+.boot-nav {
+    float: right;
+    line-height: 36px;
+}
+.boot-page {
+    display: inline-block;
+    margin: 2px 10px 0 20px;
+    vertical-align: middle;
+}
+.page-total {
+    display: inline-block;
+    vertical-align: middle;
+}
+</style>

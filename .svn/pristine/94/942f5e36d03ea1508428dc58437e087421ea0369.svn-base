@@ -1,0 +1,220 @@
+<template>
+	<div class="login-wrapper">
+		<img class="bgimg" src="./assets/bg.jpg" />
+		<div class="loginBox">
+			<h3 class="am-ft-center mgb35">江南布衣核算查询管理系统</h3>
+			<form class="form-horizontal">
+				<div class="form-group">
+					<label class="col-sm-2 control-label">手机号</label>
+					<div class="col-sm-5 pr0">
+						<input type="tel" class="form-control" v-model="param.tel" placeholder="请输入手机号">
+					</div>
+					<div class="col-sm-2 pl0 inset-btn">
+						<button type="button" class="btn" :class="{true:'btn-default',false:'btn-primary'}[isGetVcode==true]" @click="getVcode">{{codeNum}}</button>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="col-sm-2 control-label">验证码</label>
+					<div class="col-sm-5">
+						<input type="text" v-model="param.smsCode" class="form-control" placeholder="请输入验证码">
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-offset-2 col-sm-5">
+						<button type="button" class="w100 btn btn-primary" @click="login()">登录</button>
+					</div>
+				</div>
+			</form>			
+		</div>
+		<div class="alert alert_min alert-danger alert-dismissible" role="alert" v-show="ishow">
+		  <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+		  {{msg}}
+		</div>
+	</div>
+</template>
+
+<script>
+	export default {
+		name: '',
+		data() {
+			return {				
+				ishow: false,
+				msg: '',
+				param: {
+					tel: '',
+					smsCode: ''
+				},
+				isGetVcode:'',
+				codeNum:'获取验证码',
+				userInfo: ''
+			}
+		},
+		methods: {
+			getVcode(){
+				var that=this
+				var time
+				if(that.isGetVcode==false){
+					if(!(/^1(3|4|5|7|8)\d{9}$/.test(that.param.tel))){
+						that.ishow = true;
+						that.msg = '请输入正确的手机号码'
+						window.setTimeout(function(){
+							that.ishow = false;
+						},1000);			
+						return				
+					}					
+					that.codeNum=60
+					that.isGetVcode=true
+					that.$axios({
+	                  url: 'http://dvtest.qineasy.com:8888/sendSmsCode', 
+	                  method: 'post',
+	                  params: {
+	                  	tel: that.param.tel
+	                  }
+	              	})
+					.then(function (response) {		
+						that.ishow = true;
+						that.msg = response.data.Message
+						window.setTimeout(function(){
+							that.ishow = false;
+						},1000);						
+				    })
+				    .catch(function (error) {
+				        console.info(error)
+				    })						
+					time=setInterval(function(){
+						if(that.codeNum>0){
+							that.codeNum=that.codeNum-1
+						}else{
+							that.codeNum='获取验证码'
+							that.isGetVcode=false
+							clearInterval(time)
+						}
+					},1000)
+				}else{
+
+				}
+			},
+			login() {
+				var that = this;
+				if(!(/^1(3|4|5|7|8)\d{9}$/.test(that.param.tel))||(that.param.smsCode=='')){ 
+					if(that.param.smsCode==''){
+						that.ishow = true;
+						that.msg = '请输入验证码'
+						window.setTimeout(function(){
+							that.ishow = false;
+						},1000);
+						return false; 
+					}
+					if(!(/^1(3|4|5|7|8)\d{9}$/.test(that.param.tel))){
+						that.ishow = true;
+						that.msg = '请输入正确手机号'
+						window.setTimeout(function(){
+							that.ishow = false;
+						},1000);
+						return false; 
+					}				
+			    }else{
+					that.$axios({
+	                  url: 'http://dvtest.qineasy.com:8888/login', 
+	                  method: 'post',
+	                  params: that.param
+	              	})
+					.then(function (response) {		
+						if(response.data.t!=null){
+							that.userInfo = response.data.t
+							sessionStorage.userInfo = JSON.stringify([that.userInfo]);
+					        that.$router.push({
+								name: 'IndexMgt',
+								params: that.userInfo
+							})
+							location.reload();
+						}else{
+							that.ishow = true;
+							that.msg = response.data.text
+							window.setTimeout(function(){
+								that.ishow = false;
+							},1500);
+						}
+				    })
+				    .catch(function (error) {
+				        console.info(error)
+				    })	
+					// that.$axios({
+	                //   url: 'http://dvtest.qineasy.com:8888/employee/getEmployeeList', 
+	                //   method: 'post',
+	                //   params: {
+	                //   	jsonObject: that.param
+	                //   }
+	              	// })
+					// .then(function (response) {		
+					// 	console.info(response.data)
+					// 	if(response.data.t.count == 0){
+					// 		that.ishow = true;
+					// 		that.msg = '查无此人，请重新输入'
+					// 	}else if(response.data.t.count > 0){	
+					// 		that.userInfo = response.data.t.employeeList
+					// 		sessionStorage.userInfo = JSON.stringify(that.userInfo);
+					//         that.$router.push({
+					// 			name: 'Home',
+					// 			params: that.userInfo
+					// 		})
+					// 	}
+				    // })
+				    // .catch(function (error) {
+				    //     console.info(error)
+				    // })					    	
+			    }
+							
+			}
+		}
+	}
+</script>
+
+<style scoped>
+	.login-wrapper {
+		width: 100%;
+		height: 100%;
+		position: absolute;
+		left: 0;
+		top: 0;
+		background: rgba(40, 57, 101, .9);
+		color: #333333;
+		overflow: hidden;
+		font-family: "microsoft yahei";
+	    background: linear-gradient(left top, rgba(37, 52, 90, 0.95) , rgba(57, 80, 140, 0.8),rgba(12, 34, 93, 0.9));
+	    background: -o-linear-gradient(left top, rgba(37, 52, 90, 0.95) , rgba(57, 80, 140, 0.8),rgba(12, 34, 93, 0.9));
+	    background: -ms-linear-gradient(left top, rgba(37, 52, 90, 0.95) , rgba(57, 80, 140, 0.8),rgba(12, 34, 93, 0.9));
+	    background: -moz-linear-gradient(left top, rgba(37, 52, 90, 0.95) , rgba(57, 80, 140, 0.8),rgba(12, 34, 93, 0.9));
+	    background: -webkit-linear-gradient(left top, rgba(37, 52, 90, 0.95) , rgba(57, 80, 140, 0.8),rgba(12, 34, 93, 0.9))
+	}
+	.login-wrapper .bgimg{
+		position: absolute;
+		display: block;
+		width: 100%;
+		opacity: 0.65;
+		-webkit-opacity: 0.65;
+		-moz-opacity: 0.65;
+	    top: -5px;
+	    left: 0;
+	    height: 105%;
+	}
+	.loginBox {
+		display: block;
+		margin: 10% auto 0;
+		max-width: 480px;
+		min-height: 360px;
+		background: #FFFFFF;
+		box-shadow: 0 17px 50px 0 rgba(0, 0, 0, .19);
+		padding: 15px;
+	    border-radius: 4px;
+		box-sizing: border-box;
+	    position: relative;
+	}	
+	.loginBox h3 {
+	    letter-spacing: 3px;		
+	}
+	.inset-btn button{
+		border-top-left-radius: 0;
+		border-bottom-left-radius: 0;
+	}
+</style>

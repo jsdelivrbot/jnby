@@ -1,0 +1,55 @@
+<template>
+	<div>
+		<publicMenu :list="fourList"></publicMenu>		
+		<tip :list="wslist" :isShow="isShow" v-on:listenToChildEvent="getIsShow"></tip>
+	</div>
+</template>
+<script>
+	import publicMenu from './Menu.vue'	
+	import tip from './tip.vue'	
+	export default {
+		name: '',
+		data () {
+		  	return {
+				wslist:'',
+				isShow:false,
+				fourList:[]
+			  }
+		 },
+		created: function(){
+			this.getWS()
+		},
+		methods: {
+			getIsShow(val){
+				this.isShow=val
+			},
+			getWS(){
+				var that=this
+				// this.$options.sockets.onmessage = (data) => this.getMess(data)
+			},
+			getMess(mess){
+				var that=this
+				if(mess.data!=''){
+					if(that.fourList.length>=4){
+						that.fourList.shift()
+					}
+					that.fourList.push(mess.data)
+					that.isShow=true
+					that.wslist=mess.data
+					setTimeout(function(){
+					  that.isShow=false
+					},5000)
+				}
+				console.log(mess.data)
+			}		
+		},
+		components: {
+			publicMenu,
+			tip,
+		}
+	}
+
+</script>
+<style scoped>
+
+</style>
